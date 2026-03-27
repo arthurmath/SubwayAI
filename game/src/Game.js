@@ -157,7 +157,23 @@ class Game {
         let maxScore = 0;
         let totalCoins = 0;
 
+        let gameState = null;
+
         this.players.forEach(p => {
+            if (p.controller.update && typeof p.controller.update === 'function') {
+                if (!gameState) {
+                    gameState = {
+                        obstacles: this.obstacles.filter(o => o.active).map(o => ({ lane: o.lane, z: o.mesh.position.z, type: o.type })),
+                        coins: this.coins.filter(c => c.active).map(c => ({ lane: c.lane, z: c.z })),
+                        speed: speed
+                    };
+                }
+                p.controller.update({
+                    player: { lane: p.lane, x: p.x, y: p.y, vy: p.vy, dead: p.dead, score: p.score, coins: p.coins },
+                    ...gameState
+                });
+            }
+
             p.update(dt, this.speedMultiplier);
             if (!p.dead) {
                 allDead = false;

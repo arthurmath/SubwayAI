@@ -67,12 +67,31 @@ class HumanController extends Controller {
 class AIController extends Controller {
     constructor() {
         super();
-        // The AI agent will call controller.addAction(action) based on game state
+        this.socket = new WebSocket('ws://localhost:8765');
+        this.waitingForAction = false;
+
+        this.socket.onopen = () => {
+            console.log('Connected to AI Server');
+        };
+
+        this.socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.action) {
+                this.addAction(data.action);
+            }
+            this.waitingForAction = false;
+        };
+
+        this.socket.onclose = () => {
+            console.log('Disconnected from AI Server');
+        };
     }
 
     // This method can be called by the RL agent to decide on actions
     update(gameState) {
-        // AI logic goes here
-        // e.g., if (gameState.nextObstacle.lane === this.player.lane) this.addAction('L');
+        if (!this.waitingForAction && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify(gameState));
+            this.waitingForAction = true;
+        }
     }
 }
