@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Subway AI</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Three.js from CDN for simplicity -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="game-wrap"></div>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="screen">
+        <div class="logo">
+            <div class="title-top">🏃 OFFICIAL</div>
+            <div class="title-main">SUBWAY</div>
+            <div class="title-sub">AI AGENT</div>
+        </div>
+        
+        <div class="mode-selection">
+            <p>CHOOSE GAME MODE</p>
+            <div class="btn-group">
+                <button id="human-mode-btn" class="mode-btn active" data-mode="human">HUMAN PLAYER</button>
+                <button id="ai-mode-btn" class="mode-btn" data-mode="ai">AI AGENT</button>
+            </div>
+        </div>
+
+        <button id="play-btn">▶ &nbsp;PLAY</button>
+        <div class="hint">← → LANES | ↑ JUMP | ↓ SLIDE</div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div id="score-val">0m</div>
+        <div id="coin-row">
+            <div class="coin-icon"></div>
+            <span id="coin-val">0</span>
+        </div>
+    </div>
+
+    <!-- SPEED FLASH -->
+    <div id="speed-flash">⚡ FASTER!</div>
+
+    <!-- GAME OVER SCREEN -->
+    <div id="go-screen" class="screen hidden">
+        <div id="go-title">GAME OVER</div>
+        <div id="go-score">0m</div>
+        <div id="go-coins-earned">+0 🪙</div>
+        <div id="go-hint">TAP / SPACE TO RESTART</div>
+    </div>
+
+    <!-- Scripts Loading (Standard scripts to avoid CORS issues) -->
+    <script src="src/constants.js"></script>
+    <script src="src/models.js"></script>
+    <script src="src/Controller.js"></script>
+    <script src="src/Player.js"></script>
+    <script src="src/World.js"></script>
+    <script src="src/Game.js"></script>
+    <script src="src/main.js"></script>
+</body>
+</html>

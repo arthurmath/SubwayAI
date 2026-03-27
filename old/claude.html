@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<!-- Code from: https://youtu.be/eeoEnRZgpfo?si=94q_AqMCZLPO-70Y -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Subway Surfers</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { overflow:hidden; font-family:'Arial Black',Arial,sans-serif; touch-action:none; user-select:none; -webkit-user-select:none; }
+#game-wrap { position:fixed; inset:0; background:linear-gradient(180deg,#4ab3e8 0%,#87CEEB 40%,#b0e0ff 70%,#d4eeff 100%); }
+canvas { display:block; }
+
+/* ══ START SCREEN ══ */
+#start-screen { position:fixed; inset:0; background:linear-gradient(160deg,#07111f 0%,#0d2b50 40%,#1a5577 70%,#2d8aaa 100%); z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
+#start-screen.hidden { display:none; }
+.start-logo { display:flex; flex-direction:column; align-items:center; animation:logobounce 2s ease-in-out infinite; }
+@keyframes logobounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.start-title-top{font-size:22px;font-weight:900;color:#FFD700;letter-spacing:7px;text-shadow:0 0 30px rgba(255,200,0,.8);}
+.start-title-main{font-size:66px;font-weight:900;color:#fff;letter-spacing:2px;text-shadow:4px 4px 0 #cc6600,0 0 50px rgba(255,140,0,.4);line-height:1;}
+.start-title-sub{font-size:66px;font-weight:900;color:#FF6B00;letter-spacing:2px;text-shadow:4px 4px 0 #882200;line-height:1;margin-top:-8px;}
+.start-track{display:flex;align-items:center;gap:8px;opacity:.45;}
+.start-track-line{width:65px;height:3px;background:linear-gradient(90deg,transparent,#FFD700,transparent);}
+.start-balance{font-size:17px;font-weight:900;color:#FFD700;text-shadow:0 0 12px rgba(255,200,0,.6);}
+.start-btn-row{display:flex;gap:12px;align-items:center;}
+#play-btn{padding:15px 58px;font-size:25px;font-weight:900;letter-spacing:4px;color:#fff;background:linear-gradient(135deg,#ff6b00,#ffb800);border:none;border-radius:50px;cursor:pointer;box-shadow:0 6px 0 #aa3d00,0 10px 28px rgba(255,100,0,.5);text-shadow:0 2px 4px rgba(0,0,0,.3);animation:pulsebtn 1.8s ease-in-out infinite;position:relative;overflow:hidden;}
+#play-btn::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:shimmer 2.4s ease-in-out infinite;}
+@keyframes shimmer{0%{left:-100%}100%{left:200%}}
+@keyframes pulsebtn{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+#play-btn:active{transform:translateY(5px)!important;animation:none!important;}
+#shop-btn{padding:12px 32px;font-size:17px;font-weight:900;letter-spacing:2px;color:#FFD700;background:rgba(255,215,0,.08);border:2px solid rgba(255,215,0,.35);border-radius:50px;cursor:pointer;transition:all .2s;}
+#shop-btn:hover{background:rgba(255,215,0,.16);border-color:rgba(255,215,0,.6);}
+.start-hint{font-size:11px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:2px;}
+.deco-coin{position:absolute;border-radius:50%;background:radial-gradient(circle at 38% 32%,#fff59a,#ffd700 45%,#cc8800);border:2px solid #bb7700;pointer-events:none;}
+
+/* ══ SHOP SCREEN ══ */
+#shop-screen{position:fixed;inset:0;z-index:180;background:linear-gradient(160deg,#06101d 0%,#0d1e38 50%,#081420 100%);display:flex;flex-direction:column;align-items:center;}
+#shop-screen.hidden{display:none;}
+#shop-panel{width:100%;max-width:560px;height:100vh;display:flex;flex-direction:column;padding:0 16px;}
+.shop-header{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:14px;}
+.shop-title{font-size:21px;font-weight:900;color:#fff;letter-spacing:4px;}
+.shop-bal{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:900;color:#FFD700;}
+.shop-coin-dot{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#fff59a,#ffd700 45%,#cc8800);flex-shrink:0;}
+#back-btn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:8px 16px;color:rgba(255,255,255,.65);font-size:12px;font-weight:700;cursor:pointer;}
+#back-btn:hover{background:rgba(255,255,255,.13);}
+.shop-tabs{display:flex;gap:8px;margin-bottom:14px;}
+.tab-btn{flex:1;padding:11px;font-size:13px;font-weight:900;letter-spacing:2px;border:2px solid rgba(255,255,255,.1);border-radius:10px;cursor:pointer;background:rgba(255,255,255,.03);color:rgba(255,255,255,.4);transition:all .2s;}
+.tab-btn.active{background:linear-gradient(135deg,#ff6b00,#ffaa00);border-color:#ff8800;color:#fff;}
+#shop-content{flex:1;overflow-y:auto;padding-bottom:20px;}
+#shop-content::-webkit-scrollbar{width:3px;}
+#shop-content::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:2px;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+.shop-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:13px;margin-bottom:10px;display:flex;align-items:center;gap:13px;transition:border-color .2s;}
+.shop-card.owned{border-color:rgba(0,255,128,.2);}
+.shop-card.equipped{border-color:rgba(0,180,255,.35);box-shadow:0 0 14px rgba(0,180,255,.12);}
+.card-portrait{width:60px;height:85px;border-radius:8px;background:rgba(0,0,0,.3);flex-shrink:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:3px 4px;gap:2px;}
+.portrait-block{width:100%;border-radius:3px;}
+.card-info{flex:1;min-width:0;}
+.card-name{font-size:16px;font-weight:900;color:#fff;}
+.card-desc{font-size:11px;color:rgba(255,255,255,.42);margin:3px 0 7px;}
+.card-price{display:flex;align-items:center;gap:5px;}
+.price-dot{width:13px;height:13px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#fff59a,#ffd700 45%,#cc8800);flex-shrink:0;}
+.price-num{font-size:14px;font-weight:900;color:#FFD700;}
+.price-free{font-size:13px;font-weight:700;color:#00ff88;}
+.badge-owned{font-size:10px;font-weight:700;color:#00dd77;letter-spacing:1px;margin-top:4px;}
+.card-btn{padding:8px 15px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:900;letter-spacing:1px;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.btn-buy{background:linear-gradient(135deg,#ff6b00,#ffaa00);color:#fff;}
+.btn-buy:active{transform:scale(.95);}
+.btn-equip{background:linear-gradient(135deg,#0088ff,#00ccff);color:#fff;}
+.btn-equipped{background:rgba(0,255,128,.1);color:#00ee88;border:1px solid rgba(0,255,128,.3);cursor:default;}
+.btn-cantbuy{background:rgba(255,255,255,.04);color:rgba(255,255,255,.22);cursor:not-allowed;}
+.item-section-title{font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:3px;margin:4px 0 10px;}
+.magnet-active-note{font-size:11px;color:#00ff88;font-weight:700;margin-top:5px;}
+
+/* ══ HUD ══ */
+#hud{position:fixed;top:0;left:0;right:0;padding:18px 20px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;z-index:50;}
+#score-val{font-size:44px;font-weight:900;color:#fff;letter-spacing:2px;line-height:1;text-shadow:0 3px 12px rgba(0,0,0,.9);-webkit-text-stroke:1px rgba(0,0,0,.3);}
+#coin-row{display:flex;align-items:center;gap:8px;}
+.coin-hud{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#fff59a,#ffd700 45%,#cc8800);border:2px solid #bb7700;box-shadow:0 0 10px rgba(255,200,0,.7);}
+#coin-val{font-size:22px;font-weight:900;color:#FFD700;text-shadow:0 2px 6px rgba(0,0,0,.9);}
+#speed-flash{position:fixed;top:88px;left:50%;transform:translateX(-50%);font-size:28px;font-weight:900;color:#FF6600;text-shadow:0 0 24px #FF9900;pointer-events:none;z-index:55;opacity:0;transition:opacity .25s;letter-spacing:3px;white-space:nowrap;}
+#magnet-hud{position:fixed;top:18px;right:20px;display:flex;align-items:center;gap:7px;pointer-events:none;z-index:55;opacity:0;transition:opacity .3s;}
+#magnet-hud.active{opacity:1;}
+.magnet-icon{font-size:20px;}
+.magnet-wrap{width:65px;height:5px;background:rgba(255,255,255,.14);border-radius:3px;overflow:hidden;}
+#magnet-fill{height:100%;background:linear-gradient(90deg,#ffd700,#ffaa00);border-radius:3px;transition:width .15s;}
+#obs-hint{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:700;color:rgba(255,255,255,.55);text-shadow:0 1px 4px rgba(0,0,0,.7);pointer-events:none;z-index:55;letter-spacing:1px;}
+
+/* ══ GAME OVER ══ */
+#go-screen{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(3px);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:15px;}
+#go-screen.show{display:flex;}
+#go-title{font-size:68px;font-weight:900;color:#fff;text-shadow:5px 5px 0 #cc0000;letter-spacing:5px;animation:goappear .4s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes goappear{from{transform:scale(.3) rotate(-8deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+#go-score{font-size:36px;font-weight:900;color:#FFD700;text-shadow:2px 2px 8px rgba(0,0,0,.9);}
+#go-coins-earned{font-size:18px;font-weight:700;color:#ccc;}
+#go-total-coins{font-size:15px;font-weight:700;color:rgba(255,215,0,.7);}
+#go-hint{margin-top:8px;font-size:18px;font-weight:700;color:rgba(255,255,255,.9);animation:blinktxt 1.3s ease-in-out infinite;}
+@keyframes blinktxt{0%,100%{opacity:.9}50%{opacity:.25}}
+.pt{position:fixed;pointer-events:none;font-size:18px;font-weight:900;color:#FFD700;text-shadow:0 0 12px rgba(255,180,0,.7);z-index:60;animation:ptup .75s ease-out forwards;}
+@keyframes ptup{0%{transform:translateY(0) scale(1.2);opacity:1}100%{transform:translateY(-80px) scale(.7);opacity:0}}
+</style>
+</head>
+<body>
+
+<!-- START SCREEN -->
+<div id="start-screen">
+  <div class="start-logo">
+    <div class="start-title-top">🏃 OFFICIAL</div>
+    <div class="start-title-main">SUBWAY</div>
+    <div class="start-title-sub">SURFERS</div>
+  </div>
+  <div class="start-track"><div class="start-track-line"></div><span>🪙</span><div class="start-track-line"></div></div>
+  <div class="start-balance">🪙 <span id="start-coin-display">0</span> coins</div>
+  <div class="start-btn-row">
+    <button id="play-btn">▶ &nbsp;PLAY</button>
+    <button id="shop-btn">🛒 SHOP</button>
+  </div>
+  <div class="start-hint">← → LANES &nbsp;|&nbsp; ↑ JUMP &nbsp;|&nbsp; ↓ SLIDE</div>
+</div>
+
+<!-- SHOP SCREEN -->
+<div id="shop-screen" class="hidden">
+  <div id="shop-panel">
+    <div class="shop-header">
+      <button id="back-btn">← BACK</button>
+      <span class="shop-title">🛒 SHOP</span>
+      <div class="shop-bal"><div class="shop-coin-dot"></div><span id="shop-coin-val">0</span></div>
+    </div>
+    <div class="shop-tabs">
+      <button class="tab-btn active" data-tab="items">ITEMS</button>
+      <button class="tab-btn" data-tab="skins">SKINS</button>
+    </div>
+    <div id="shop-content">
+      <div id="tab-items" class="tab-content active"></div>
+      <div id="tab-skins" class="tab-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="game-wrap"></div>
+<div id="hud">
+  <div id="score-val">0m</div>
+  <div id="coin-row"><div class="coin-hud"></div><span id="coin-val">0</span></div>
+</div>
+<div id="speed-flash">⚡ FASTER!</div>
+<div id="magnet-hud"><span class="magnet-icon">🧲</span><div class="magnet-wrap"><div id="magnet-fill" style="width:100%"></div></div></div>
+<div id="obs-hint">← → LANES &nbsp;|&nbsp; ↑ JUMP &nbsp;|&nbsp; ↓ SLIDE</div>
+<div id="go-screen">
+  <div id="go-title">GAME OVER</div>
+  <div id="go-score">0m</div>
+  <div id="go-coins-earned">+0 🪙</div>
+  <div id="go-total-coins">Total: 0 coins</div>
+  <div id="go-hint">TAP / SPACE TO RESTART</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+// ══════════════════════════════
+//  PERSISTENT STATE
+// ══════════════════════════════
+let totalCoins   = parseInt(localStorage.getItem('ss_coins')||'0');
+let ownedSkins   = JSON.parse(localStorage.getItem('ss_skins')||'["jake"]');
+let equippedSkin = localStorage.getItem('ss_skin')||'jake';
+let ownedItems   = JSON.parse(localStorage.getItem('ss_items')||'[]');
+function saveState(){
+  localStorage.setItem('ss_coins', totalCoins);
+  localStorage.setItem('ss_skins', JSON.stringify(ownedSkins));
+  localStorage.setItem('ss_skin',  equippedSkin);
+  localStorage.setItem('ss_items', JSON.stringify(ownedItems));
+}
+
+// ══════════════════════════════
+//  SHOP DATA
+// ══════════════════════════════
+const SKIN_DATA = {
+  jake:    { name:'JAKE',      desc:'The Original Surfer',  price:0,    hat:'#228822', body:'#e8eef5', pants:'#4a78b8', face:'#d4956b', shoes:'#f0f0f0' },
+  princek: { name:'PRINCE K',  desc:'The Trendsetter',      price:500,  hat:'#3a1a08', body:'#1e1208', pants:'#1e1208', face:'#6b3010', shoes:'#ddaa22' },
+  fresh:   { name:'FRESH',     desc:'The Cool Kid',         price:300,  hat:'#3a1a05', body:'#44bb33', pants:'#cc2222', face:'#8b4a1a', shoes:'#8899bb' },
+  ninja:   { name:'NINJA',     desc:'The Shadow Runner',    price:800,  hat:'#2a2018', body:'#2a2018', pants:'#2a2018', face:'#d4956b', shoes:'#cc1111' }
+};
+const ITEM_DATA = {
+  magnet: { name:'MAGNET', desc:'Auto-collects nearby coins (15s per run)', price:200, icon:'🧲' }
+};
+
+// ══════════════════════════════
+//  START / SHOP UI
+// ══════════════════════════════
+let gameStarted = false;
+const startScreen = document.getElementById('start-screen');
+const shopScreen  = document.getElementById('shop-screen');
+
+// Floating deco coins
+(function(){
+  const s=document.createElement('style');
+  s.textContent='@keyframes floatcoin{0%{transform:translateY(0) rotate(0);opacity:.6}90%{opacity:.3}100%{transform:translateY(-110vh) rotate(360deg);opacity:0}}';
+  document.head.appendChild(s);
+  for(let i=0;i<12;i++){
+    const c=document.createElement('div');
+    c.className='deco-coin';
+    const sz=8+Math.random()*16;
+    const dur=5+Math.random()*8;
+    c.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}vw;bottom:-20px;opacity:${.3+Math.random()*.5};animation:floatcoin ${dur}s ${-Math.random()*dur}s linear infinite;`;
+    startScreen.appendChild(c);
+  }
+})();
+
+function updateStartCoins(){ document.getElementById('start-coin-display').textContent=totalCoins; }
+updateStartCoins();
+
+document.getElementById('play-btn').addEventListener('click', startGame);
+document.addEventListener('keydown', e=>{ if(!gameStarted&&!shopScreen.classList.contains('hidden')===false&&(e.code==='Space'||e.code==='Enter')) startGame(); });
+
+function startGame(){
+  if(gameStarted) return;
+  gameStarted=true;
+  startScreen.classList.add('hidden');
+  equipSkin(equippedSkin);
+}
+
+// Shop button
+document.getElementById('shop-btn').addEventListener('click',()=>{
+  startScreen.classList.add('hidden');
+  shopScreen.classList.remove('hidden');
+  renderShop();
+});
+document.getElementById('back-btn').addEventListener('click',()=>{
+  shopScreen.classList.add('hidden');
+  startScreen.classList.remove('hidden');
+  updateStartCoins();
+});
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+function drawPortrait(el, spec){
+  el.innerHTML='';
+  const parts=[
+    {h:'17%',color:spec.hat,br:'4px 4px 2px 2px'},
+    {h:'20%',color:spec.face,br:'4px'},
+    {h:'28%',color:spec.body,br:'3px'},
+    {h:'20%',color:spec.pants,br:'2px'},
+    {h:'13%',color:spec.shoes,br:'0 0 4px 4px'}
+  ];
+  parts.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='portrait-block';
+    d.style.cssText=`height:${p.h};background:${p.color};border-radius:${p.br};`;
+    el.appendChild(d);
+  });
+}
+
+function renderShop(){
+  document.getElementById('shop-coin-val').textContent=totalCoins;
+  // Items tab
+  const itemsTab=document.getElementById('tab-items');
+  itemsTab.innerHTML='<div class="item-section-title">POWER-UPS</div>';
+  const id=ITEM_DATA.magnet;
+  const owned=ownedItems.includes('magnet');
+  const canBuy=!owned&&totalCoins>=id.price;
+  const card=document.createElement('div');
+  card.className='shop-card'+(owned?' owned':'');
+  card.innerHTML=`
+    <div class="card-portrait" style="align-items:center;justify-content:center;font-size:32px;">${id.icon}</div>
+    <div class="card-info">
+      <div class="card-name">${id.name}</div>
+      <div class="card-desc">${id.desc}</div>
+      ${owned?'<div class="badge-owned">✓ OWNED — ACTIVE EVERY RUN</div>':
+        `<div class="card-price"><div class="price-dot"></div><span class="price-num">${id.price}</span></div>`}
+    </div>
+    <button class="card-btn ${owned?'btn-equipped':canBuy?'btn-buy':'btn-cantbuy'}" 
+      data-action="${owned?'':canBuy?'buy-magnet':''}" 
+      ${!owned&&!canBuy?'disabled':''}>
+      ${owned?'✓ OWNED':canBuy?'BUY':'NOT ENOUGH'}
+    </button>`;
+  card.querySelector('button').addEventListener('click',e=>{
+    const a=e.target.dataset.action;
+    if(a==='buy-magnet'&&totalCoins>=id.price){ totalCoins-=id.price; ownedItems.push('magnet'); saveState(); renderShop(); }
+  });
+  itemsTab.appendChild(card);
+
+  // Skins tab
+  const skinsTab=document.getElementById('tab-skins');
+  skinsTab.innerHTML='<div class="item-section-title">CHARACTERS</div>';
+  Object.entries(SKIN_DATA).forEach(([key,sd])=>{
+    const isOwned=ownedSkins.includes(key);
+    const isEq=equippedSkin===key;
+    const canB=!isOwned&&totalCoins>=sd.price;
+    const sc=document.createElement('div');
+    sc.className='shop-card'+(isOwned?' owned':'')+(isEq?' equipped':'');
+    let btnClass=isEq?'btn-equipped':isOwned?'btn-equip':canB?'btn-buy':'btn-cantbuy';
+    let btnText=isEq?'✓ EQUIPPED':isOwned?'EQUIP':canB?'BUY':'NOT ENOUGH';
+    let btnAction=isEq?'':isOwned?'equip-'+key:canB?'buy-'+key:'';
+    sc.innerHTML=`
+      <div class="card-portrait" id="port-${key}"></div>
+      <div class="card-info">
+        <div class="card-name">${sd.name}</div>
+        <div class="card-desc">${sd.desc}</div>
+        ${isOwned||sd.price===0?'<div class="badge-owned">✓ OWNED</div>':
+          `<div class="card-price"><div class="price-dot"></div><span class="price-num">${sd.price}</span></div>`}
+      </div>
+      <button class="card-btn ${btnClass}" data-action="${btnAction}" ${!btnAction?'disabled':''}>${btnText}</button>`;
+    sc.querySelector('button').addEventListener('click',e=>{
+      const a=e.target.dataset.action;
+      if(a.startsWith('buy-')){
+        const sk=a.slice(4);
+        if(totalCoins>=SKIN_DATA[sk].price){ totalCoins-=SKIN_DATA[sk].price; ownedSkins.push(sk); saveState(); renderShop(); }
+      } else if(a.startsWith('equip-')){
+        equippedSkin=a.slice(6); saveState(); renderShop();
+      }
+    });
+    skinsTab.appendChild(sc);
+    drawPortrait(document.getElementById('port-'+key), sd);
+  });
+  document.getElementById('shop-coin-val').textContent=totalCoins;
+}
+
+// ══════════════════════════════
+//  THREE.JS SETUP
+// ══════════════════════════════
+const LANES=[-2.2,0,2.2];
+const BASE_SPEED=14, MAX_MULT=2.5, SPEED_STEP=0.18, SCORE_LEVEL=500;
+const JUMP_VEL=10.5, GRAVITY=-28, ROLL_DUR=0.78, LANE_LERP=9.5, RECYCLE_Z=7;
+const HIT_X_TRAIN=0.83, HIT_X_BAR=0.73, HIT_Z_ENTER=-1.85, HIT_Z_EXIT=1.85;
+const MAGNET_DUR=15, MAGNET_RANGE=2.6;
+
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.2;
+renderer.setClearColor(0x87CEEB,0);
+document.getElementById('game-wrap').appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0xb0e0ff,28,95);
+
+const camera=new THREE.PerspectiveCamera(62,window.innerWidth/window.innerHeight,0.1,200);
+const CAM_POS=new THREE.Vector3(0,3.6,5.8);
+const CAM_LOOK=new THREE.Vector3(0,0.8,-10);
+camera.position.copy(CAM_POS);
+camera.lookAt(CAM_LOOK);
+
+window.addEventListener('resize',()=>{
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// Lights
+scene.add(new THREE.AmbientLight(0xd0e8ff,0.72));
+const sun=new THREE.DirectionalLight(0xfff8e8,1.55);
+sun.position.set(14,32,8); sun.castShadow=true;
+sun.shadow.camera.near=1; sun.shadow.camera.far=110;
+sun.shadow.camera.left=-25; sun.shadow.camera.right=25;
+sun.shadow.camera.top=25; sun.shadow.camera.bottom=-25;
+sun.shadow.mapSize.set(1024,1024); sun.shadow.bias=-0.001;
+scene.add(sun);
+scene.add(new THREE.HemisphereLight(0x87ceeb,0x5a9e5a,0.55));
+
+// ══════════════════════════════
+//  WORLD GEOMETRY
+// ══════════════════════════════
+const grassMat=new THREE.MeshStandardMaterial({color:0x5cb85c,roughness:1});
+[-34,34].forEach(x=>{
+  const g=new THREE.Mesh(new THREE.PlaneGeometry(55,280),grassMat);
+  g.rotation.x=-Math.PI/2; g.position.set(x,-0.02,-120); g.receiveShadow=true; scene.add(g);
+});
+const swMat=new THREE.MeshStandardMaterial({color:0xc8c8c8,roughness:0.95});
+[-7.5,7.5].forEach(x=>{
+  const s=new THREE.Mesh(new THREE.PlaneGeometry(3.5,280),swMat);
+  s.rotation.x=-Math.PI/2; s.position.set(x,-0.01,-120); s.receiveShadow=true; scene.add(s);
+});
+const tbMat=new THREE.MeshStandardMaterial({color:0x6a6070,roughness:0.95});
+const tb=new THREE.Mesh(new THREE.PlaneGeometry(12.5,280),tbMat);
+tb.rotation.x=-Math.PI/2; tb.position.set(0,-0.005,-120); tb.receiveShadow=true; scene.add(tb);
+const grvMat=new THREE.MeshStandardMaterial({color:0x7a7060,roughness:1});
+[-3.2,-1.0,1.0,3.2].forEach(x=>{
+  const g=new THREE.Mesh(new THREE.PlaneGeometry(0.65,280),grvMat);
+  g.rotation.x=-Math.PI/2; g.position.set(x,0.002,-120); scene.add(g);
+});
+const railMat=new THREE.MeshStandardMaterial({color:0xcccccc,metalness:0.85,roughness:0.2});
+[-3.05,-1.45,-0.55,0.55,1.45,3.05].forEach(x=>{
+  const r=new THREE.Mesh(new THREE.BoxGeometry(0.09,0.08,280),railMat);
+  r.position.set(x,0.05,-120); r.receiveShadow=true; scene.add(r);
+});
+const SLP_COUNT=48, SLP_SPACING=1.2;
+const slpMat=new THREE.MeshStandardMaterial({color:0x5a3a18,roughness:0.96});
+const slpGeo=new THREE.BoxGeometry(8.4,0.11,0.40);
+const sleepers=[];
+for(let i=0;i<SLP_COUNT;i++){
+  const m=new THREE.Mesh(slpGeo,slpMat);
+  m.position.set(0,0.01,-i*SLP_SPACING); m.receiveShadow=true; m.castShadow=true;
+  scene.add(m); sleepers.push({m,z:m.position.z});
+}
+
+// Trees
+const TREE_COUNT=20, TREE_SPACING=6.5;
+function mkTree(side){
+  const g=new THREE.Group();
+  const pine=Math.random()>.45, sc=.65+Math.random()*.7;
+  if(pine){
+    const th=.5*sc;
+    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.10*sc,.14*sc,th,7),new THREE.MeshStandardMaterial({color:0x6b3a1f,roughness:.95}));
+    trunk.position.y=th/2; trunk.castShadow=true; g.add(trunk);
+    const ch1=1.6*sc;
+    const c1=new THREE.Mesh(new THREE.ConeGeometry(.7*sc,ch1,7),new THREE.MeshStandardMaterial({color:0x2d6e35,roughness:.9}));
+    c1.position.y=th+ch1/2; c1.castShadow=true; g.add(c1);
+    const ch2=1.1*sc;
+    const c2=new THREE.Mesh(new THREE.ConeGeometry(.5*sc,ch2,7),new THREE.MeshStandardMaterial({color:0x338040,roughness:.9}));
+    c2.position.y=th+ch1*.6+ch2/2; c2.castShadow=true; g.add(c2);
+  } else {
+    const th=.7*sc;
+    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.11*sc,.16*sc,th,6),new THREE.MeshStandardMaterial({color:0x7a4a22,roughness:.95}));
+    trunk.position.y=th/2; trunk.castShadow=true; g.add(trunk);
+    const lr=.75*sc;
+    const lc=[0x3a8c3a,0x4a9e40,0x2e7a30][Math.floor(Math.random()*3)];
+    const lv=new THREE.Mesh(new THREE.SphereGeometry(lr,7,6),new THREE.MeshStandardMaterial({color:lc,roughness:.95}));
+    lv.position.y=th+lr*.85; lv.castShadow=true; g.add(lv);
+  }
+  g.position.x=side*(8.5+Math.random()*6);
+  scene.add(g); return g;
+}
+const leftTrees=[], rightTrees=[];
+for(let i=0;i<TREE_COUNT;i++){
+  const tl=mkTree(-1); tl.position.z=-i*TREE_SPACING; leftTrees.push({g:tl,z:tl.position.z});
+  const tr=mkTree(1);  tr.position.z=-i*TREE_SPACING; rightTrees.push({g:tr,z:tr.position.z});
+}
+
+// ══════════════════════════════
+//  SKIN BUILD SYSTEM
+// ══════════════════════════════
+// P is the character root (position + lean)
+// P.rotation.y = Math.PI → back faces camera
+const P=new THREE.Group();
+P.rotation.y=Math.PI;   // ← KEY FIX: player faces away from camera
+scene.add(P);
+
+function bx(w,h,d,col,opt={}){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshStandardMaterial({color:col,roughness:opt.r||.7,metalness:opt.m||0,
+      emissive:opt.e||0,emissiveIntensity:opt.ei||0}));
+  m.castShadow=true; return m;
+}
+function addArm(g,xPos,sleeveCol,skinCol){
+  const ag=new THREE.Group(); ag.position.set(xPos,1.05,0);
+  const up=bx(.18,.32,.18,sleeveCol); up.position.set(0,-.16,0); ag.add(up);
+  const lw=bx(.16,.26,.16,sleeveCol); lw.position.set(0,-.40,0); ag.add(lw);
+  const hd=bx(.14,.14,.14,skinCol); hd.position.set(0,-.58,0); ag.add(hd);
+  g.add(ag); return ag;
+}
+function addLeg(g,xPos,pantsCol){
+  const lg=new THREE.Group(); lg.position.set(xPos,.60,0);
+  const m=bx(.23,.46,.24,pantsCol); m.position.set(0,-.23,0); lg.add(m);
+  g.add(lg); return lg;
+}
+function addShoe(g,xPos,baseCol,accentCol,soleCol){
+  const sg=new THREE.Group();
+  const base=bx(.28,.14,.38,baseCol); sg.add(base);
+  if(accentCol){const s=bx(.30,.06,.39,accentCol); s.position.y=.04; sg.add(s);}
+  const sl=bx(.29,.05,.39,soleCol||0x222222); sl.position.y=-.09; sg.add(sl);
+  sg.position.set(xPos,.07,.05); sg.castShadow=true;
+  g.add(sg); return sg;
+}
+function addFace(g,skinCol,eyeY){
+  [-.12,.12].forEach(ex=>{
+    const ew=new THREE.Mesh(new THREE.BoxGeometry(.10,.08,.04),new THREE.MeshStandardMaterial({color:0xffffff}));
+    ew.position.set(ex,eyeY,.21); g.add(ew);
+    const ep=new THREE.Mesh(new THREE.BoxGeometry(.05,.05,.04),new THREE.MeshStandardMaterial({color:0x111111}));
+    ep.position.set(ex,eyeY,.23); g.add(ep);
+  });
+  [-.12,.12].forEach(ex=>{
+    const br=new THREE.Mesh(new THREE.BoxGeometry(.13,.04,.03),new THREE.MeshStandardMaterial({color:0x3a2010}));
+    br.position.set(ex,eyeY+.07,.21); g.add(br);
+  });
+}
+
+// ── JAKE ──
+function buildJake(g){
+  const SK=0xd4956b,HO=0xe8eef5,VS=0xa8c0d8,SH=0xcc2222,JN=0x4a78b8;
+  const torso=bx(.56,.62,.36,HO); torso.position.set(0,.87,0); g.add(torso);
+  const vf=bx(.58,.55,.06,VS); vf.position.set(0,.90,.19); g.add(vf);
+  const vl=bx(.07,.55,.32,VS); vl.position.set(-.30,.90,0); g.add(vl);
+  const vr=bx(.07,.55,.32,VS); vr.position.set(.30,.90,0); g.add(vr);
+  const col=bx(.32,.09,.30,SH); col.position.set(0,1.17,.04); g.add(col);
+  const hood=bx(.48,.40,.22,HO); hood.position.set(0,1.40,-.14); g.add(hood);
+  const nk=bx(.19,.14,.20,SK); nk.position.set(0,1.21,0); g.add(nk);
+  const head=bx(.42,.40,.40,SK); head.position.set(0,1.46,0); g.add(head);
+  addFace(g,SK,1.50);
+  const hair=bx(.44,.10,.42,0x2a1a0a); hair.position.set(0,1.68,0); g.add(hair);
+  const hb=bx(.48,.14,.50,0x228822); hb.position.set(0,1.74,.02); g.add(hb);
+  const hm=bx(.48,.10,.50,0xddbb00); hm.position.set(0,1.85,.02); g.add(hm);
+  const ht=bx(.46,.18,.48,0xcc2222); ht.position.set(0,1.96,.01); g.add(ht);
+  const hbrim=bx(.52,.08,.52,0x1a1a1a); hbrim.position.set(0,1.68,.01); g.add(hbrim);
+  const pp=new THREE.Mesh(new THREE.SphereGeometry(.10,7,6),new THREE.MeshStandardMaterial({color:0xdddddd}));
+  pp.position.set(0,2.14,0); g.add(pp);
+  const laG=addArm(g,-.37,HO,SK);
+  const raG=addArm(g,.37,HO,SK);
+  const llG=addLeg(g,-.14,JN);
+  const rlG=addLeg(g,.14,JN);
+  const lShoeG=addShoe(g,-.14,0xf0f0f0,0x44aa44,0x222222);
+  const rShoeG=addShoe(g,.14,0xf0f0f0,0x44aa44,0x222222);
+  return {torso,laG,raG,llG,rlG,lShoeG,rShoeG};
+}
+
+// ── PRINCE K ──
+function buildPrinceK(g){
+  const SK=0x6b3010,TK=0x1e1208,GN=0x228822,RD=0xcc2222,GD=0xddaa22,WH=0xe8dfc0;
+  const torso=bx(.56,.62,.36,TK); torso.position.set(0,.87,0); g.add(torso);
+  // Rasta stripes on torso sides
+  const gs1=bx(.06,.55,.38,GN); gs1.position.set(-.32,.87,0); g.add(gs1);
+  const gs2=bx(.06,.55,.38,RD); gs2.position.set(.32,.87,0); g.add(gs2);
+  // Waist stripe
+  const ws=bx(.58,.07,.38,RD); ws.position.set(0,.60,0); g.add(ws);
+  const ws2=bx(.58,.05,.38,GN); ws2.position.set(0,.54,0); g.add(ws2);
+  // White scarf/cowl
+  const sc=bx(.46,.30,.44,WH); sc.position.set(0,1.18,0); g.add(sc);
+  const scnk=bx(.34,.18,.34,WH); scnk.position.set(0,1.05,0); g.add(scnk);
+  const head=bx(.42,.40,.40,SK); head.position.set(0,1.46,0); g.add(head);
+  addFace(g,SK,1.50);
+  // Gold aviator glasses bar
+  const glassBar=bx(.42,.08,.04,0xddaa22,{m:.7,r:.2}); glassBar.position.set(0,1.50,.22); g.add(glassBar);
+  const lLens=bx(.17,.14,.04,0x1a1a00,{m:.2,r:.2,e:0x1a1a00}); lLens.position.set(-.12,1.50,.22); g.add(lLens);
+  const rLens=bx(.17,.14,.04,0x1a1a00,{m:.2,r:.2}); rLens.position.set(.12,1.50,.22); g.add(rLens);
+  // Dark beanie
+  const hb=bx(.50,.22,.52,0x2e1408); hb.position.set(0,1.74,0); g.add(hb);
+  const ht=bx(.48,.18,.50,0x3a1a08); ht.position.set(0,1.91,0); g.add(ht);
+  // Arms with stripes
+  const laG=addArm(g,-.37,TK,SK);
+  const raG=addArm(g,.37,TK,SK);
+  // Add green stripes on sleeves
+  const ls=bx(.04,.28,.18,GN); ls.position.set(-.37-.12,1.05-.16,0); g.add(ls);
+  const rs=bx(.04,.28,.18,GN); rs.position.set(.37+.12,1.05-.16,0); g.add(rs);
+  const llG=addLeg(g,-.14,TK);
+  const rlG=addLeg(g,.14,TK);
+  // Leg stripes
+  const lls=bx(.04,.42,.24,GN); lls.position.set(-.14-.14,.60-.23,0); g.add(lls);
+  const rls=bx(.04,.42,.24,GN); rls.position.set(.14+.14,.60-.23,0); g.add(rls);
+  // White socks
+  const lsk=bx(.25,.12,.26,0xffffff); lsk.position.set(-.14,.16,.04); g.add(lsk);
+  const rsk=bx(.25,.12,.26,0xffffff); rsk.position.set(.14,.16,.04); g.add(rsk);
+  const lShoeG=addShoe(g,-.14,GD,0xcc8800,0x3a2200);
+  const rShoeG=addShoe(g,.14,GD,0xcc8800,0x3a2200);
+  return {torso,laG,raG,llG,rlG,lShoeG,rShoeG};
+}
+
+// ── FRESH ──
+function buildFresh(g){
+  const SK=0x8b4a1a,GR=0x44bb33,RD=0xcc2222,SH=0x8899bb;
+  const torso=bx(.52,.56,.34,GR); torso.position.set(0,.87,0); g.add(torso);
+  // Tank top straps visible
+  const nk=bx(.14,.16,.22,SK); nk.position.set(0,1.21,0); g.add(nk);
+  const head=bx(.42,.40,.40,SK); head.position.set(0,1.46,0); g.add(head);
+  addFace(g,SK,1.50);
+  // Tall flat-top hair
+  const hairBase=bx(.44,.08,.42,0x3a1a05); hairBase.position.set(0,1.67,0); g.add(hairBase);
+  const flatTop=bx(.42,.30,.40,0x3a1a05); flatTop.position.set(0,1.82,0); g.add(flatTop);
+  // Black square glasses frames
+  const gf=bx(.42,.12,.04,0x111111); gf.position.set(0,1.49,.22); g.add(gf);
+  const gl=bx(.14,.12,.04,0x222222); gl.position.set(-.12,1.49,.22); g.add(gl);
+  const gr2=bx(.14,.12,.04,0x222222); gr2.position.set(.12,1.49,.22); g.add(gr2);
+  const laG=addArm(g,-.37,SK,SK);
+  const raG=addArm(g,.37,SK,SK);
+  const llG=addLeg(g,-.14,RD);
+  const rlG=addLeg(g,.14,RD);
+  // White socks with red stripe
+  const lsk=bx(.25,.14,.26,0xffffff); lsk.position.set(-.14,.16,.04); g.add(lsk);
+  const rsk=bx(.25,.14,.26,0xffffff); rsk.position.set(.14,.16,.04); g.add(rsk);
+  const lss=bx(.26,.04,.27,RD); lss.position.set(-.14,.21,.04); g.add(lss);
+  const rss=bx(.26,.04,.27,RD); rss.position.set(.14,.21,.04); g.add(rss);
+  const lShoeG=addShoe(g,-.14,SH,0xcc2222,0x444455);
+  const rShoeG=addShoe(g,.14,SH,0xcc2222,0x444455);
+  return {torso,laG,raG,llG,rlG,lShoeG,rShoeG};
+}
+
+// ── NINJA ──
+function buildNinja(g){
+  const NK=0x2a2018,SK=0xd4956b,RD=0xcc1111,SD=0xcc1111;
+  const torso=bx(.56,.62,.36,NK); torso.position.set(0,.87,0); g.add(torso);
+  // Red belt/sash
+  const belt=bx(.58,.10,.38,RD); belt.position.set(0,.60,0); g.add(belt);
+  const beltKnot=bx(.12,.12,.14,RD); beltKnot.position.set(0,.60,.20); g.add(beltKnot);
+  const nkw=bx(.38,.30,.36,NK); nkw.position.set(0,1.18,0); g.add(nkw);
+  const head=bx(.44,.40,.44,NK); head.position.set(0,1.46,0); g.add(head);
+  // Skin visible around eyes only
+  const eyeArea=bx(.42,.16,.06,SK); eyeArea.position.set(0,1.52,.22); g.add(eyeArea);
+  addFace(g,SK,1.52);
+  // Ninja mask over lower face
+  const mask=bx(.44,.20,.06,NK); mask.position.set(0,1.41,.22); g.add(mask);
+  // Hood
+  const hood=bx(.50,.38,.44,NK); hood.position.set(0,1.74,.02); g.add(hood);
+  const laG=addArm(g,-.37,NK,SK);
+  const raG=addArm(g,.37,NK,SK);
+  const llG=addLeg(g,-.14,NK);
+  const rlG=addLeg(g,.14,NK);
+  // Leg wraps (dark bands)
+  [.32,.22,.12].forEach(y=>{
+    const lw=bx(.25,.04,.26,0x1a1208); lw.position.set(-.14,y,.04); g.add(lw);
+    const rw=bx(.25,.04,.26,0x1a1208); rw.position.set(.14,y,.04); g.add(rw);
+  });
+  // Red platform sandals
+  const lShoeG=addShoe(g,-.14,0x9b6340,null,SD);
+  const rShoeG=addShoe(g,.14,0x9b6340,null,SD);
+  // Platform base (red elevated)
+  const lp=bx(.32,.06,.40,SD); lp.position.set(-.14,.02,.05); g.add(lp);
+  const rp=bx(.32,.06,.40,SD); rp.position.set(.14,.02,.05); g.add(rp);
+  return {torso,laG,raG,llG,rlG,lShoeG,rShoeG};
+}
+
+// Build all skins
+const allSkins={};
+const builders={jake:buildJake,princek:buildPrinceK,fresh:buildFresh,ninja:buildNinja};
+['jake','princek','fresh','ninja'].forEach(name=>{
+  const sg=new THREE.Group(); P.add(sg); sg.visible=false;
+  allSkins[name]={group:sg,...builders[name](sg)};
+});
+
+let activeSkin=null;
+function equipSkin(name){
+  equippedSkin=name;
+  Object.values(allSkins).forEach(s=>s.group.visible=false);
+  if(allSkins[name]) { allSkins[name].group.visible=true; activeSkin=allSkins[name]; }
+  saveState();
+}
+// Show Jake on start (for background while on menu)
+equipSkin(equippedSkin);
+
+// ══════════════════════════════
+//  OBSTACLES — 3 types
+// ══════════════════════════════
+const OBS_POOL=28;
+const obstacles=[];
+const TRAIN_COLS=[0xcc2222,0x2244cc,0x228833,0xaaaaaa,0xcc7700,0x882288,0x1a6a8a];
+
+function mkTrain(){
+  const g=new THREE.Group();
+  const col=TRAIN_COLS[Math.floor(Math.random()*TRAIN_COLS.length)];
+  const bm=new THREE.MeshStandardMaterial({color:col,roughness:.55,metalness:.35});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(1.72,1.95,3.9),bm);
+  body.position.y=1.10; body.castShadow=true; body.receiveShadow=true; g.add(body);
+  const stripe=new THREE.Mesh(new THREE.BoxGeometry(1.74,.30,3.92),new THREE.MeshStandardMaterial({color:0xffffff,roughness:.5}));
+  stripe.position.y=1.65; g.add(stripe);
+  const wm=new THREE.MeshStandardMaterial({color:0x2a4060,emissive:0x0d1e35,emissiveIntensity:.5,roughness:.2});
+  [-1,1].forEach(sx=>{for(let i=0;i<3;i++){const w=new THREE.Mesh(new THREE.BoxGeometry(.06,.44,.60),wm);w.position.set(sx*.89,1.32,-1.2+i*1.2);g.add(w);}});
+  const wlm=new THREE.MeshStandardMaterial({color:0x252525,metalness:.92,roughness:.3});
+  [-1.3,1.3].forEach(wz=>{const wl=new THREE.Mesh(new THREE.CylinderGeometry(.26,.26,1.88,12),wlm);wl.rotation.z=Math.PI/2;wl.position.set(0,.26,wz);wl.castShadow=true;g.add(wl);});
+  const fc=new THREE.Color(col); fc.multiplyScalar(1.12);
+  const front=new THREE.Mesh(new THREE.BoxGeometry(1.72,1.95,.14),new THREE.MeshStandardMaterial({color:fc.getHex(),roughness:.5}));
+  front.position.set(0,1.10,2.0); g.add(front);
+  const hlm=new THREE.MeshStandardMaterial({color:0xffffcc,emissive:0xffee66,emissiveIntensity:1.8,roughness:.1});
+  [-.52,.52].forEach(hx=>{const hl=new THREE.Mesh(new THREE.BoxGeometry(.24,.15,.08),hlm);hl.position.set(hx,.88,2.06);g.add(hl);});
+  const ws=new THREE.Mesh(new THREE.BoxGeometry(1.0,.55,.07),new THREE.MeshStandardMaterial({color:0x3a6080,emissive:0x1a3050,emissiveIntensity:.3}));
+  ws.position.set(0,1.55,2.08); g.add(ws);
+  g.visible=false; scene.add(g); return g;
+}
+function mkLowBarrier(){
+  const g=new THREE.Group();
+  const pm=new THREE.MeshStandardMaterial({color:0xdddddd,metalness:.55,roughness:.5});
+  const bm=new THREE.MeshStandardMaterial({color:0xee2222,metalness:.3,roughness:.6});
+  const sm=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.7});
+  [-.6,.6].forEach(px=>{
+    const p=new THREE.Mesh(new THREE.CylinderGeometry(.055,.065,.72,8),pm);p.position.set(px,.36,0);p.castShadow=true;g.add(p);
+    const b=new THREE.Mesh(new THREE.BoxGeometry(.22,.06,.22),pm);b.position.set(px,.03,0);g.add(b);
+  });
+  const bar=new THREE.Mesh(new THREE.BoxGeometry(1.30,.13,.13),bm);bar.position.set(0,.72,0);bar.castShadow=true;g.add(bar);
+  for(let bx2=-.44;bx2<=.44;bx2+=.22){const s=new THREE.Mesh(new THREE.BoxGeometry(.09,.13,.14),sm);s.position.set(bx2,.72,0);g.add(s);}
+  const bar2=new THREE.Mesh(new THREE.BoxGeometry(1.30,.08,.08),bm);bar2.position.set(0,.42,0);g.add(bar2);
+  g.visible=false; scene.add(g); return g;
+}
+function mkHighFence(){
+  const g=new THREE.Group();
+  const fm=new THREE.MeshStandardMaterial({color:0x888860,metalness:.4,roughness:.7});
+  const pm=new THREE.MeshStandardMaterial({color:0x8B5A2B,roughness:.92});
+  const pm2=new THREE.MeshStandardMaterial({color:0x7a4e24,roughness:.93});
+  [-.62,.62].forEach(px=>{
+    const p=new THREE.Mesh(new THREE.BoxGeometry(.09,1.55,.09),fm);p.position.set(px,.78,0);p.castShadow=true;g.add(p);
+    const sp=new THREE.Mesh(new THREE.ConeGeometry(.07,.18,4),fm);sp.position.set(px,1.62,0);g.add(sp);
+  });
+  [.14,1.42].forEach(py=>{const b=new THREE.Mesh(new THREE.BoxGeometry(1.28,.08,.08),fm);b.position.set(0,py,0);g.add(b);});
+  for(let i=0;i<8;i++){
+    const px=-.56+i*(1.12/7);
+    const pl=new THREE.Mesh(new THREE.BoxGeometry(.13,1.30,.07),i%2===0?pm:pm2);
+    pl.position.set(px,.80,0);pl.castShadow=true;g.add(pl);
+  }
+  const tp=new THREE.Mesh(new THREE.BoxGeometry(1.28,.07,.05),new THREE.MeshStandardMaterial({color:0xffcc00,roughness:.8}));
+  tp.position.set(0,1.50,.04);g.add(tp);
+  g.visible=false; scene.add(g); return g;
+}
+
+for(let i=0;i<12;i++) obstacles.push({mesh:mkTrain(),      type:'train',lane:0,z:-200,active:false});
+for(let i=0;i<8;i++)  obstacles.push({mesh:mkLowBarrier(), type:'low',  lane:0,z:-200,active:false});
+for(let i=0;i<8;i++)  obstacles.push({mesh:mkHighFence(),  type:'high', lane:0,z:-200,active:false});
+
+// ══════════════════════════════
+//  COINS
+// ══════════════════════════════
+const COIN_POOL=90;
+const coinGeo=new THREE.CylinderGeometry(.21,.21,.09,14);
+const coinMat=new THREE.MeshStandardMaterial({color:0xFFD700,metalness:.85,roughness:.12,emissive:0xCC8800,emissiveIntensity:.70});
+const coins=[];
+for(let i=0;i<COIN_POOL;i++){
+  const m=new THREE.Mesh(coinGeo,coinMat);
+  m.rotation.x=Math.PI/2; m.visible=false; scene.add(m);
+  coins.push({m,lane:0,z:-200,active:false,collected:false,baseY:.55});
+}
+
+// ══════════════════════════════
+//  GAME STATE
+// ══════════════════════════════
+let gs={};
+function initState(){
+  gs={
+    mode:'playing',score:0,coins:0,
+    speedMult:1.0,lastLevel:0,time:0,
+    targetLane:1,x:LANES[1],y:0,vy:0,
+    jumping:false,rolling:false,rollT:0,
+    shakeT:0,shakeMag:0,queue:[],animT:0,
+    magnetActive:false,magnetT:0
+  };
+  if(ownedItems.includes('magnet')){
+    gs.magnetActive=true; gs.magnetT=MAGNET_DUR;
+    document.getElementById('magnet-hud').classList.add('active');
+  } else {
+    document.getElementById('magnet-hud').classList.remove('active');
+  }
+}
+initState();
+
+// ══════════════════════════════
+//  SPAWN
+// ══════════════════════════════
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
+function freeObs(t){return obstacles.find(o=>!o.active&&(!t||o.type===t));}
+function freeCoin(){return coins.find(c=>!c.active);}
+function pickType(){const r=Math.random();return r<.44?'train':r<.70?'high':'low';}
+
+function spawnCluster(z){
+  const lanes=[0,1,2]; shuffle(lanes);
+  const n=Math.random()<.52?1:2;
+  for(let i=0;i<n;i++){
+    const type=pickType();
+    const obs=freeObs(type)||freeObs();
+    if(!obs) return;
+    obs.lane=lanes[i]; obs.z=z; obs.active=true; obs.mesh.visible=true;
+    obs.mesh.position.set(LANES[lanes[i]],0,z);
+  }
+}
+function spawnCoins(z){
+  const pat=Math.floor(Math.random()*5);
+  if(pat===0){
+    const ln=Math.floor(Math.random()*3),cnt=5+Math.floor(gs.speedMult*2);
+    for(let i=0;i<cnt;i++){const c=freeCoin();if(!c)return;c.lane=ln;c.z=z-i*1.25;c.active=true;c.collected=false;c.baseY=.52;c.m.visible=true;c.m.position.set(LANES[ln],c.baseY,c.z);}
+  }else if(pat===1){
+    const sq=[0,1,2,1,0,1,2];
+    for(let i=0;i<sq.length;i++){const c=freeCoin();if(!c)return;c.lane=sq[i];c.z=z-i*1.0;c.active=true;c.collected=false;c.baseY=.52;c.m.visible=true;c.m.position.set(LANES[sq[i]],c.baseY,c.z);}
+  }else if(pat===2){
+    const pair=Math.random()<.5?[0,1]:[1,2];
+    for(const ln of pair)for(let i=0;i<5;i++){const c=freeCoin();if(!c)return;c.lane=ln;c.z=z-i*1.2;c.active=true;c.collected=false;c.baseY=.52;c.m.visible=true;c.m.position.set(LANES[ln],c.baseY,c.z);}
+  }else if(pat===3){
+    for(let i=0;i<6;i++){const c=freeCoin();if(!c)return;c.lane=i%3;c.z=z-i*1.1;c.active=true;c.collected=false;c.baseY=.52;c.m.visible=true;c.m.position.set(LANES[c.lane],c.baseY,c.z);}
+  }else{
+    const ln=Math.floor(Math.random()*3);
+    for(let i=0;i<5;i++){const c=freeCoin();if(!c)return;c.lane=ln;c.z=z-i*.9;c.active=true;c.collected=false;c.baseY=.55+Math.sin((i/4)*Math.PI)*1.2;c.m.visible=true;c.m.position.set(LANES[ln],c.baseY,c.z);}
+  }
+}
+function seedWorld(){
+  for(let i=0;i<6;i++) spawnCluster(-22-i*16);
+  for(let i=0;i<7;i++) spawnCoins(-7-i*10);
+}
+seedWorld();
+function checkSpawn(){
+  let moz=0,ho=false;
+  for(const o of obstacles) if(o.active&&o.z<moz){moz=o.z;ho=true;}
+  if(!ho||moz>-44) spawnCluster(ho?moz-(13+Math.random()*9):-26);
+  let mcz=0,hc=false;
+  for(const c of coins) if(c.active&&c.z<mcz){mcz=c.z;hc=true;}
+  if(!hc||mcz>-40) spawnCoins(hc?mcz-(8+Math.random()*5):-10);
+}
+
+// ══════════════════════════════
+//  CONTROLS
+// ══════════════════════════════
+function input(act){
+  if(gs.mode==='dead'){restartGame();return;}
+  if(!gameStarted) return;
+  gs.queue.push(act);
+}
+document.addEventListener('keydown',e=>{
+  if(e.repeat) return;
+  if(!gameStarted&&(e.code==='Space'||e.code==='Enter')){startGame();return;}
+  switch(e.code){
+    case 'ArrowLeft': case 'KeyA': input('L'); break;
+    case 'ArrowRight':case 'KeyD': input('R'); break;
+    case 'ArrowUp':   case 'KeyW': case 'Space': input('J'); e.preventDefault(); break;
+    case 'ArrowDown': case 'KeyS': input('S'); break;
+  }
+});
+let txS=0,tyS=0,ttS=0;
+document.addEventListener('touchstart',e=>{txS=e.touches[0].clientX;tyS=e.touches[0].clientY;ttS=Date.now();e.preventDefault();},{passive:false});
+document.addEventListener('touchend',e=>{
+  const t=e.changedTouches[0],dx=t.clientX-txS,dy=t.clientY-tyS,dt2=Date.now()-ttS;
+  if(dt2>450||(Math.abs(dx)<12&&Math.abs(dy)<12)) return;
+  if(Math.abs(dx)>Math.abs(dy)) input(dx>0?'R':'L');
+  else input(dy<0?'J':'S');
+  e.preventDefault();
+},{passive:false});
+document.getElementById('go-screen').addEventListener('click',restartGame);
+document.addEventListener('keydown',e=>{if(gs.mode==='dead'&&(e.code==='Space'||e.code==='Enter'))restartGame();});
+
+function processInput(){
+  if(!gs.queue.length) return;
+  const act=gs.queue.shift();
+  switch(act){
+    case 'L': gs.targetLane=Math.max(0,gs.targetLane-1); break;
+    case 'R': gs.targetLane=Math.min(2,gs.targetLane+1); break;
+    case 'J': if(!gs.jumping){gs.jumping=true;gs.vy=JUMP_VEL;gs.rolling=false;gs.rollT=0;} break;
+    case 'S': if(!gs.jumping){gs.rolling=true;gs.rollT=ROLL_DUR;}else{gs.vy=Math.min(gs.vy,-8);} break;
+  }
+}
+
+// ══════════════════════════════
+//  COLLISION
+// ══════════════════════════════
+function collectCoin(c){
+  if(c.collected) return;
+  c.collected=true; c.active=false; c.m.visible=false;
+  gs.coins++; gs.score+=10;
+  const v=new THREE.Vector3(LANES[c.lane],c.baseY,0).project(camera);
+  spawnPt((v.x*.5+.5)*window.innerWidth,(-v.y*.5+.5)*window.innerHeight);
+  hudUpdate();
+}
+
+function collide(){
+  const px=gs.x,py=gs.y;
+  for(const obs of obstacles){
+    if(!obs.active) continue;
+    if(obs.z<HIT_Z_ENTER||obs.z>HIT_Z_EXIT) continue;
+    const hx=obs.type==='train'?HIT_X_TRAIN:HIT_X_BAR;
+    if(Math.abs(px-LANES[obs.lane])>hx) continue;
+    if(obs.type==='train'){
+      if(py>1.88) continue;
+      triggerDeath(); return;
+    }else if(obs.type==='low'){
+      if(gs.rolling) continue;
+      if(py>.90) continue;
+      triggerDeath(); return;
+    }else if(obs.type==='high'){
+      if(py>1.45) continue;
+      triggerDeath(); return;
+    }
+  }
+  // Normal coin collection
+  for(const c of coins){
+    if(!c.active||c.collected) continue;
+    if(c.z<-1.55||c.z>1.55) continue;
+    if(Math.abs(px-LANES[c.lane])>.92) continue;
+    if(Math.abs(py-c.baseY)>.82) continue;
+    collectCoin(c);
+  }
+  // Magnet collection
+  if(gs.magnetActive){
+    for(const c of coins){
+      if(!c.active||c.collected) continue;
+      const dx=px-LANES[c.lane],dy=py-c.baseY,dz=-c.z;
+      if(Math.sqrt(dx*dx+dy*dy+dz*dz)<MAGNET_RANGE) collectCoin(c);
+    }
+  }
+}
+
+// ══════════════════════════════
+//  HUD / PARTICLES
+// ══════════════════════════════
+function spawnPt(x,y){
+  const el=document.createElement('div'); el.className='pt'; el.textContent='+10';
+  el.style.left=x+'px'; el.style.top=y+'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.parentNode&&el.parentNode.removeChild(el),760);
+}
+const scoreEl=document.getElementById('score-val');
+const coinEl=document.getElementById('coin-val');
+const flashEl=document.getElementById('speed-flash');
+const goScreen=document.getElementById('go-screen');
+const magnetFill=document.getElementById('magnet-fill');
+const magnetHud=document.getElementById('magnet-hud');
+let flashTO=null;
+function hudUpdate(){scoreEl.textContent=Math.floor(gs.score)+'m';coinEl.textContent=gs.coins;}
+function showFlash(){flashEl.style.opacity='1';if(flashTO)clearTimeout(flashTO);flashTO=setTimeout(()=>flashEl.style.opacity='0',1400);}
+
+function triggerDeath(){
+  if(gs.mode!=='playing') return;
+  gs.mode='dead'; gs.shakeT=.45; gs.shakeMag=.38;
+  totalCoins+=gs.coins; saveState(); updateStartCoins();
+  setTimeout(()=>{
+    document.getElementById('go-score').textContent=Math.floor(gs.score)+'m';
+    document.getElementById('go-coins-earned').textContent='+'+gs.coins+' 🪙';
+    document.getElementById('go-total-coins').textContent='Total: '+totalCoins+' coins';
+    goScreen.classList.add('show');
+  },460);
+}
+
+function restartGame(){
+  for(const o of obstacles){o.active=false;o.mesh.visible=false;}
+  for(const c of coins){c.active=false;c.collected=false;c.m.visible=false;}
+  P.position.set(LANES[1],0,0); P.rotation.set(0,Math.PI,0); P.scale.set(1,1,1);
+  equipSkin(equippedSkin);
+  initState(); seedWorld();
+  goScreen.classList.remove('show'); hudUpdate();
+}
+
+// ══════════════════════════════
+//  ANIMATION
+// ══════════════════════════════
+function animateChar(dt,speed){
+  const a=activeSkin; if(!a) return;
+  gs.animT+=dt*(speed/BASE_SPEED)*1.45;
+  const t=gs.animT,rf=6.5,ra=.42;
+  if(gs.rolling){
+    P.scale.set(1,.54,1.35);
+    a.llG.rotation.x=1.0; a.rlG.rotation.x=1.0;
+    a.laG.rotation.x=.5;  a.raG.rotation.x=.5;
+    if(a.torso) a.torso.position.y=.55;
+    P.rotation.z*=.88;
+  }else{
+    P.scale.set(1,1,1);
+    if(a.torso) a.torso.position.y=.87+Math.abs(Math.sin(t*rf))*.04;
+    a.llG.rotation.x= Math.sin(t*rf)*ra;
+    a.rlG.rotation.x=-Math.sin(t*rf)*ra;
+    a.laG.rotation.x=-Math.sin(t*rf)*ra*.85;
+    a.raG.rotation.x= Math.sin(t*rf)*ra*.85;
+    if(gs.jumping){
+      const tuck=Math.max(0,Math.sin(Math.max(0,gs.y/2.5)*Math.PI));
+      a.llG.rotation.x=-tuck*1.5; a.rlG.rotation.x=-tuck*1.5;
+      a.laG.rotation.x= tuck*.9;  a.raG.rotation.x= tuck*.9;
+    }
+    const dx=LANES[gs.targetLane]-gs.x;
+    P.rotation.z+=(-dx*.16-P.rotation.z)*.18;
+  }
+  // Shoe bob (Y axis)
+  if(a.lShoeG) a.lShoeG.position.y=.07+Math.max(0, Math.sin(t*rf))*.06;
+  if(a.rShoeG) a.rShoeG.position.y=.07+Math.max(0,-Math.sin(t*rf))*.06;
+}
+
+// ══════════════════════════════
+//  MAIN LOOP
+// ══════════════════════════════
+let lastTS=performance.now();
+function update(now){
+  const dt=Math.min((now-lastTS)/1000,.05); lastTS=now;
+
+  if(gs.mode==='dead'){
+    if(gs.shakeT>0){
+      gs.shakeT-=dt;
+      const mag=gs.shakeMag*(gs.shakeT/.45);
+      camera.position.set(CAM_POS.x+(Math.random()-.5)*mag*2.2,CAM_POS.y+(Math.random()-.5)*mag,CAM_POS.z+(Math.random()-.5)*mag*.4);
+      camera.lookAt(CAM_LOOK);
+    }else{camera.position.copy(CAM_POS);camera.lookAt(CAM_LOOK);}
+    renderer.render(scene,camera); return;
+  }
+  if(!gameStarted){renderer.render(scene,camera);return;}
+
+  gs.time+=dt;
+  const speed=BASE_SPEED*gs.speedMult;
+  gs.score+=speed*dt*.26;
+
+  if(gs.score-gs.lastLevel>=SCORE_LEVEL){
+    gs.lastLevel=gs.score;
+    gs.speedMult=Math.min(gs.speedMult+SPEED_STEP,MAX_MULT);
+    showFlash();
+  }
+
+  // Magnet timer
+  if(gs.magnetActive){
+    gs.magnetT-=dt;
+    if(gs.magnetT<=0){gs.magnetActive=false;magnetHud.classList.remove('active');}
+    else{magnetFill.style.width=(gs.magnetT/MAGNET_DUR*100)+'%';}
+  }
+
+  processInput();
+  gs.x+=(LANES[gs.targetLane]-gs.x)*Math.min(1,LANE_LERP*dt);
+  if(gs.jumping){gs.vy+=GRAVITY*dt;gs.y+=gs.vy*dt;if(gs.y<=0){gs.y=0;gs.vy=0;gs.jumping=false;}}
+  if(gs.rolling){gs.rollT-=dt;if(gs.rollT<=0){gs.rolling=false;gs.rollT=0;}}
+
+  P.position.set(gs.x,gs.y,0);
+  animateChar(dt,speed);
+
+  for(const s of sleepers){s.z+=speed*dt;if(s.z>RECYCLE_Z)s.z-=SLP_COUNT*SLP_SPACING;s.m.position.z=s.z;}
+  const ts=speed*.32;
+  for(const t of leftTrees){t.z+=ts*dt;if(t.z>20)t.z-=TREE_COUNT*TREE_SPACING;t.g.position.z=t.z;}
+  for(const t of rightTrees){t.z+=ts*dt;if(t.z>20)t.z-=TREE_COUNT*TREE_SPACING;t.g.position.z=t.z;}
+  for(const obs of obstacles){
+    if(!obs.active) continue;
+    obs.z+=speed*dt; obs.mesh.position.z=obs.z;
+    if(obs.z>RECYCLE_Z){obs.active=false;obs.mesh.visible=false;}
+  }
+  for(const c of coins){
+    if(!c.active) continue;
+    c.z+=speed*dt; c.m.position.z=c.z;
+    c.m.position.y=c.baseY+Math.sin(gs.time*3.8+c.z*.4)*.07;
+    c.m.rotation.y+=dt*3.2;
+    if(c.z>RECYCLE_Z){c.active=false;c.m.visible=false;}
+  }
+  checkSpawn(); collide(); hudUpdate();
+
+  camera.position.x+=(CAM_POS.x+gs.x*.14-camera.position.x)*.07;
+  camera.position.y=CAM_POS.y; camera.position.z=CAM_POS.z;
+  camera.lookAt(new THREE.Vector3(CAM_LOOK.x+gs.x*.05,CAM_LOOK.y,CAM_LOOK.z));
+}
+
+function frame(now){requestAnimationFrame(frame);update(now);renderer.render(scene,camera);}
+requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>
