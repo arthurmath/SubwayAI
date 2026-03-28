@@ -60,18 +60,19 @@ class HumanController extends Controller {
     }
 }
 
-/**
- * Placeholder for AI Controller.
- * In the future, this will be connected to a Reinforcement Learning agent.
- */
+
 class AIController extends Controller {
-    constructor() {
+    constructor(mode = 'ai') {
         super();
+        this.mode = mode;
         this.socket = new WebSocket('ws://localhost:8765');
         this.waitingForAction = false;
+        this.initialized = false;
 
         this.socket.onopen = () => {
-            console.log('Connected to AI Server');
+            console.log('Connected to AI Server in ' + this.mode + ' mode');
+            this.socket.send(JSON.stringify({ type: 'init', mode: this.mode }));
+            this.initialized = true;
         };
 
         this.socket.onmessage = (event) => {
@@ -89,9 +90,22 @@ class AIController extends Controller {
 
     // This method can be called by the RL agent to decide on actions
     update(gameState) {
+        if (!this.initialized) return;
         if (!this.waitingForAction && this.socket.readyState === WebSocket.OPEN) {
-            this.socket.send(JSON.stringify(gameState));
+            this.socket.send(JSON.stringify({ type: 'state', data: gameState }));
             this.waitingForAction = true;
+        }
+    }
+
+    saveWeights() {
+        if (this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify({ type: 'save' }));
+        }
+    }
+
+    destroy() {
+        if (this.socket) {
+            this.socket.close();
         }
     }
 }

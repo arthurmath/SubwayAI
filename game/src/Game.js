@@ -52,6 +52,9 @@ class Game {
     clearPlayers() {
         this.players.forEach(p => {
             if (p.mesh) this.world.scene.remove(p.mesh);
+            if (p.controller && typeof p.controller.destroy === 'function') {
+                p.controller.destroy();
+            }
         });
         this.players = [];
     }
@@ -317,5 +320,27 @@ class Game {
         document.getElementById('go-score').textContent = Math.floor(score) + 'm';
         document.getElementById('go-coins-earned').textContent = '+' + coins + ' 🪙';
         this.goScreen.classList.remove('hidden');
+        
+        if (this.mode === 'train') {
+            setTimeout(() => {
+                this.goScreen.click();
+            }, 100);
+        }
+    }
+
+    stopTraining() {
+        if (this.mode !== 'train') return;
+
+        let aiPlayer = this.players.find(p => p.id.startsWith('ai-train'));
+        if (aiPlayer && aiPlayer.controller && typeof aiPlayer.controller.saveWeights === 'function') {
+            aiPlayer.controller.saveWeights();
+        }
+
+        this.active = false;
+        this.clearPlayers();
+        
+        document.getElementById('start-screen').classList.remove('hidden');
+        document.getElementById('stop-training-btn').classList.add('hidden');
+        this.goScreen.classList.add('hidden');
     }
 }

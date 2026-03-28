@@ -23,7 +23,8 @@
             <p>CHOOSE GAME MODE</p>
             <div class="btn-group">
                 <button id="human-mode-btn" class="mode-btn active" data-mode="human">HUMAN PLAYER</button>
-                <button id="ai-mode-btn" class="mode-btn" data-mode="ai">AI AGENT</button>
+                <button id="ai-mode-btn" class="mode-btn" data-mode="ai">AI PLAYER</button>
+                <button id="train-mode-btn" class="mode-btn" data-mode="train">TRAIN AI</button>
             </div>
         </div>
 
@@ -33,6 +34,7 @@
 
     <!-- HUD -->
     <div id="hud">
+        <button id="stop-training-btn" class="hidden" style="margin-bottom: 10px; padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; z-index: 100; pointer-events: auto;">🛑 STOP TRAINING</button>
         <div id="score-val">0m</div>
         <div id="coin-row">
             <div class="coin-icon"></div>

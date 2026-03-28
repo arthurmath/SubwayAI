@@ -8,21 +8,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const playBtn = document.getElementById('play-btn');
     const humanBtn = document.getElementById('human-mode-btn');
     const aiBtn = document.getElementById('ai-mode-btn');
+    const trainBtn = document.getElementById('train-mode-btn');
+    const stopTrainingBtn = document.getElementById('stop-training-btn');
     const goScreen = document.getElementById('go-screen');
     
     let currentMode = 'human';
 
     // Toggle Mode Selection
-    humanBtn.addEventListener('click', () => {
-        currentMode = 'human';
-        humanBtn.classList.add('active');
-        aiBtn.classList.remove('active');
-    });
-
-    aiBtn.addEventListener('click', () => {
-        currentMode = 'ai';
-        aiBtn.classList.add('active');
+    function setMode(mode, btn) {
+        currentMode = mode;
         humanBtn.classList.remove('active');
+        aiBtn.classList.remove('active');
+        trainBtn.classList.remove('active');
+        btn.classList.add('active');
+    }
+
+    humanBtn.addEventListener('click', () => setMode('human', humanBtn));
+    aiBtn.addEventListener('click', () => setMode('ai', aiBtn));
+    trainBtn.addEventListener('click', () => setMode('train', trainBtn));
+
+    stopTrainingBtn.addEventListener('click', () => {
+        game.stopTraining();
     });
 
     // Start Game
@@ -50,15 +56,25 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add a single human player
             const controller = new HumanController();
             game.addPlayer(controller, 'human');
-        } else {
+        } else if (currentMode === 'ai') {
+            // Add a single AI player that plays the best weights
+            const controller = new AIController('ai');
+            game.addPlayer(controller, 'ai-best');
+        } else if (currentMode === 'train') {
             // Add multiple AI players to demonstrate modularity
-            // In the future, each will have its own RL model instance
             for (let i = 0; i < AI_PLAYERS; i++) {
-                const controller = new AIController();
-                game.addPlayer(controller, `ai-${i}`);
+                const controller = new AIController('train');
+                game.addPlayer(controller, `ai-train-${i}`);
             }
         }
 
+        if (currentMode === 'train') {
+            stopTrainingBtn.classList.remove('hidden');
+        } else {
+            stopTrainingBtn.classList.add('hidden');
+        }
+
+        game.mode = currentMode;
         game.start();
     }
 });
