@@ -12,6 +12,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 weights_dir = "weights"
 os.makedirs(weights_dir, exist_ok=True)
 
+
 class ActorCritic(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(ActorCritic, self).__init__()
@@ -50,43 +51,40 @@ class ActorCritic(nn.Module):
 
 
 class Agent:
-    def __init__(self, state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip):
+    def __init__(self, state_dim, action_dim, lr_actor, lr_critic, gamma, epochs, eps_clip):
         self.gamma = gamma
         self.eps_clip = eps_clip
-        self.K_epochs = K_epochs
+        self.epochs = epochs
         
         self.policy = ActorCritic(state_dim, action_dim).to(device)
+        self.policy_old = ActorCritic(state_dim, action_dim).to(device)
+        self.policy_old.load_state_dict(self.policy.state_dict())
+
+        self.loss = nn.MSELoss()
         self.optimizer = torch.optim.Adam([
             {'params': self.policy.actor.parameters(), 'lr': lr_actor},
             {'params': self.policy.critic.parameters(), 'lr': lr_critic}
         ])
         
-        self.policy_old = ActorCritic(state_dim, action_dim).to(device)
-        self.policy_old.load_state_dict(self.policy.state_dict())
-        self.loss = nn.MSELoss()
-        
         # Ensure that simultaneous updates from multiple agents don't clash
         self.update_lock = asyncio.Lock()
         
-    def select_action(self, state, buffer):
+        
+    def select_action(self, state, buffer=None):
         with torch.no_grad():
             state_t = torch.FloatTensor(state).to(device)
             action, action_logprob, state_val = self.policy_old.act(state_t)
             
-        buffer.states.append(state_t)
-        buffer.actions.append(action)
-        buffer.logprobs.append(action_logprob)
-        buffer.state_values.append(state_val)
+        if buffer is not None:
+            buffer.states.append(state_t)
+            buffer.actions.append(action)
+            buffer.logprobs.append(action_logprob)
+            buffer.state_values.append(state_val)
         
         return action.item()
         
-    def predict_action(self, state):
-        with torch.no_grad():
-            state_t = torch.FloatTensor(state).to(device)
-            action, _, _ = self.policy_old.act(state_t)
-        return action.item()
-        
-    async def update(self, buffer):
+
+    async def train(self, buffer):
         async with self.update_lock:
             if len(buffer.states) == 0:
                 return
@@ -123,7 +121,7 @@ class Agent:
             advantages = rewards.detach() - old_state_values.detach()
             
             # Optimize policy for K epochs
-            for _ in range(self.K_epochs):
+            for _ in range(self.epochs):
                 logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
                 state_values = torch.squeeze(state_values)
                 if len(state_values.shape) == 0:

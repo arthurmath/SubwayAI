@@ -50,15 +50,15 @@ function addLeg(group, xPos, pantsCol) {
 // Player Shoe Builder
 function addShoe(group, xPos, baseCol, accentCol, soleCol) {
     const sg = new THREE.Group();
-    const base = createBox(0.28, 0.14, 0.38, baseCol);
+    const base = createBox(0.25, 0.12, 0.34, baseCol);
     sg.add(base);
     if (accentCol) {
-        const s = createBox(0.30, 0.06, 0.39, accentCol);
-        s.position.y = 0.04;
+        const s = createBox(0.27, 0.05, 0.35, accentCol);
+        s.position.y = 0.035;
         sg.add(s);
     }
-    const sl = createBox(0.29, 0.05, 0.39, soleCol || 0x222222);
-    sl.position.y = -0.09;
+    const sl = createBox(0.26, 0.04, 0.35, soleCol || 0x222222);
+    sl.position.y = -0.08;
     sg.add(sl);
     sg.position.set(xPos, 0.07, 0.05);
     group.add(sg);
@@ -67,18 +67,13 @@ function addShoe(group, xPos, baseCol, accentCol, soleCol) {
 
 // Player Face Builder
 function addFace(group, skinCol, eyeY) {
-    [-0.12, 0.12].forEach(ex => {
+    [-0.08, 0.08].forEach(ex => {
         const ew = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.08, 0.04), new THREE.MeshStandardMaterial({ color: 0xffffff }));
         ew.position.set(ex, eyeY, 0.21);
         group.add(ew);
         const ep = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.04), new THREE.MeshStandardMaterial({ color: 0x111111 }));
         ep.position.set(ex, eyeY, 0.23);
         group.add(ep);
-    });
-    [-0.12, 0.12].forEach(ex => {
-        const br = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.04, 0.03), new THREE.MeshStandardMaterial({ color: 0x3a2010 }));
-        br.position.set(ex, eyeY + 0.07, 0.21);
-        group.add(br);
     });
 }
 
@@ -129,8 +124,8 @@ function buildJake() {
     const rlG = addLeg(group, 0.14 * SCALE, JN);
     const lShoeG = addShoe(llG, 0, 0x228822, null, 0x222222);
     const rShoeG = addShoe(rlG, 0, 0x228822, null, 0x222222);
-    lShoeG.position.set(0, -0.46 * SCALE, 0.05 * SCALE);
-    rShoeG.position.set(0, -0.46 * SCALE, 0.05 * SCALE);
+    lShoeG.position.set(0, -0.475 * SCALE, 0.05 * SCALE);
+    rShoeG.position.set(0, -0.475 * SCALE, 0.05 * SCALE);
 
     return { group, torso, laG, raG, llG, rlG, lShoeG, rShoeG };
 }
@@ -230,30 +225,37 @@ function buildHighFence() {
     const pm = new THREE.MeshStandardMaterial({ color: 0x8B5A2B, roughness: 0.92 });
     const pm2 = new THREE.MeshStandardMaterial({ color: 0x7a4e24, roughness: 0.93 });
 
+    // Side support posts
     [-0.62, 0.62].forEach(px => {
-        const p = createBox(0.09, 1.55, 0.09, 0x888860, { metalness: 0.4 });
-        p.position.set(px, 0.78, 0);
+        // Main tall post
+        const p = createBox(0.09, 2.5, 0.09, 0x888860, { metalness: 0.4 });
+        p.position.set(px, 1.25, 0);
         group.add(p);
+        
+        // Spike on top
         const sp = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.18, 4), fm);
-        sp.position.set(px, 1.62, 0);
+        sp.position.set(px, 2.59, 0);
         group.add(sp);
     });
 
-    [0.14, 1.42].forEach(py => {
+    // Horizontal bars (raised)
+    [0.85, 2.35].forEach(py => {
         const b = createBox(1.28, 0.08, 0.08, 0x888860, { metalness: 0.4 });
         b.position.set(0, py, 0);
         group.add(b);
     });
 
+    // Vertical planks (raised)
     for (let i = 0; i < 8; i++) {
         const px = -0.56 + i * (1.12 / 7);
-        const pl = createBox(0.13, 1.30, 0.07, i % 2 === 0 ? 0x8B5A2B : 0x7a4e24);
-        pl.position.set(px, 0.80, 0);
+        const pl = createBox(0.13, 1.50, 0.07, i % 2 === 0 ? 0x8B5A2B : 0x7a4e24);
+        pl.position.set(px, 1.60, 0);
         group.add(pl);
     }
 
+    // Top yellow trim (raised)
     const tp = createBox(1.28, 0.07, 0.05, 0xffcc00, { roughness: 0.8 });
-    tp.position.set(0, 1.50, 0.04);
+    tp.position.set(0, 2.40, 0.04);
     group.add(tp);
 
     return group;
@@ -263,11 +265,11 @@ function buildHighFence() {
 function buildCoin() {
     const coinGeo = new THREE.CylinderGeometry(0.21, 0.21, 0.09, 14);
     const coinMat = new THREE.MeshStandardMaterial({
-        color: 0xFFFF55,
-        metalness: 0.95,
+        color: 0xFFFF00,
+        metalness: 0.9,
         roughness: 0.05,
-        emissive: 0x888800,
-        emissiveIntensity: 0.6
+        emissive: 0xFFFF00,
+        emissiveIntensity: 1.0
     });
     const mesh = new THREE.Mesh(coinGeo, coinMat);
     mesh.rotation.x = Math.PI / 2;

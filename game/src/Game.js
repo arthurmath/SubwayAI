@@ -128,7 +128,7 @@ class Game {
             for (let i = 0; i < seq.length; i++) this.activateCoin(seq[i], z - i * 1.0, 0.52);
         } else { // Generic arc or other
             for (let i = 0; i < 5; i++) {
-                const y = 0.55 + Math.sin((i / 4) * Math.PI) * 1.2;
+                const y = 0.55 + Math.sin((i / 4) * Math.PI) * 2.1;
                 this.activateCoin(lane, z - i * 0.9, y);
             }
         }
@@ -313,9 +313,10 @@ class Game {
                     }
                 }
             } else if (obs.type === 'low') {
-                if (!player.rolling && py < 0.70) { player.triggerDeath(); return; }
+                if (py < 0.70) { player.triggerDeath(); return; }
             } else if (obs.type === 'high') {
-                if (py < 1.45) { player.triggerDeath(); return; }
+                const playerTop = py + (player.rolling ? 0.81 : 1.5);
+                if (playerTop > 0.85 && py < 2.30) { player.triggerDeath(); return; }
             }
         }
 
@@ -324,7 +325,7 @@ class Game {
             if (!coin.active) continue;
             if (coin.z < -1.55 || coin.z > 1.55) continue;
             if (Math.abs(px - LANES[coin.lane]) > 0.92) continue;
-            if (Math.abs(py - coin.baseY) > 0.82) continue;
+            if (Math.abs((py + 0.85) - coin.baseY) > 1.0) continue;
 
             // Collect
             coin.active = false;
@@ -356,7 +357,7 @@ class Game {
         this.paused = false;
         if (this.pauseOverlay) this.pauseOverlay.classList.add('hidden');
         document.getElementById('go-score').textContent = Math.floor(score) + 'm';
-        document.getElementById('go-coins-earned').textContent = '+' + coins + ' 🪙';
+        document.getElementById('go-coins-earned').textContent = '+' + coins;
         this.goScreen.classList.remove('hidden');
         
         if (this.mode === 'train') {
@@ -412,15 +413,18 @@ class Game {
                 obs_by_lane[lane] = obs.z ?? 0;
                 state[`L${laneId}_Z`] = Math.abs(obs_by_lane[lane]) / 50.0;
                 const t = obs.type;
-                state[`L${laneId}_T`] = t === 'low' ? 1.0 : (t === 'high' ? 0.5 : 0.0);
+                let otype = 1.0; // train default
+                if (t === 'low') otype = 0.0;
+                else if (t === 'high') otype = 0.5;
+                state[`L${laneId}_T`] = otype;
             } else {
                 obs_by_lane[lane] = -500.0;
                 state[`L${laneId}_Z`] = 1.0;
-                state[`L${laneId}_T`] = 0.0;
+                state[`L${laneId}_T`] = -1.0;
             }
         }
         
-        // 3. Coins: Next per lane and Count before next obstacle
+        // 3. Coins: Next per lane and Count BEFORE next obstacle
         for (let lane = 0; lane < 3; lane++) {
             const laneId = lane + 1;
             const coins_in_lane = coins
@@ -428,14 +432,12 @@ class Game {
                 .sort((a, b) => (b.z ?? 0) - (a.z ?? 0));
             
             const obs_z = obs_by_lane[lane];
+            const coins_before_obs = coins_in_lane.filter(c => (c.z ?? 0) > obs_z);
             
-            if (coins_in_lane.length > 0) {
-                const first_coin = coins_in_lane[0];
+            if (coins_before_obs.length > 0) {
+                const first_coin = coins_before_obs[0];
                 state[`C${laneId}_Z`] = Math.abs(first_coin.z ?? 0) / 50.0;
-                
-                // Count coins before obstacle
-                const count = coins_in_lane.filter(c => (c.z ?? 0) > obs_z).length;
-                state[`C${laneId}_N`] = count;
+                state[`C${laneId}_N`] = coins_before_obs.length;
             } else {
                 state[`C${laneId}_Z`] = 1.0;
                 state[`C${laneId}_N`] = 0.0;

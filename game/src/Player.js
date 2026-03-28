@@ -203,27 +203,44 @@ class Player {
         const ra = 0.58; // Running amplitude (more amplitude)
 
         if (this.rolling) {
-            this.mesh.scale.set(1, 0.54, 1.35);
-            this.parts.llG.rotation.x = 1.0;
-            this.parts.rlG.rotation.x = 1.0;
-            this.parts.laG.rotation.x = 0.5;
-            this.parts.raG.rotation.x = 0.5;
-            if (this.parts.torso) this.parts.torso.position.y = 0.55;
-            this.mesh.rotation.z *= 0.88;
+            // Tackle slide (football style): flattening backwards, feet first
+            // We use a positive rotation on X because the player is already rotated 180° on Y
+            this.mesh.rotation.x = Math.PI / 2.2; 
+            this.mesh.scale.set(1, 1, 1); // Reset scale to avoid distortion
+            
+            // Adjust height: since the pivot is at the feet, rotating 90° puts the body on the floor
+            this.mesh.position.y = this.y + 0.22;
+            
+            // Pose limbs for a dynamic tackle
+            this.parts.llG.rotation.x = -0.15; // Lowered forward leg
+            this.parts.rlG.rotation.x = 0.7;   // Leg tucked in
+            
+            this.parts.laG.rotation.x = 0.4; // Arms slightly back for support
+            this.parts.raG.rotation.x = 0.4;
+            this.parts.laG.rotation.z = -0.2;
+            this.parts.raG.rotation.z = 0.2;
+
+            this.mesh.rotation.z *= 0.5; // Reduce lane-change tilt during slide
         } else {
+            this.mesh.rotation.x = 0; // Reset X rotation
+            this.mesh.position.y = this.y;
             this.mesh.scale.set(1, 1, 1);
             if (this.parts.torso) this.parts.torso.position.y = 0.87 + Math.abs(Math.sin(t * rf)) * 0.04;
             this.parts.llG.rotation.x = Math.sin(t * rf) * ra;
             this.parts.rlG.rotation.x = -Math.sin(t * rf) * ra;
             this.parts.laG.rotation.x = -Math.sin(t * rf) * ra * 0.85;
             this.parts.raG.rotation.x = Math.sin(t * rf) * ra * 0.85;
+            this.parts.laG.rotation.z = 0;
+            this.parts.raG.rotation.z = 0;
 
             if (this.jumping) {
                 const tuck = Math.max(0, Math.sin(Math.max(0, this.y / 2.5) * Math.PI));
-                this.parts.llG.rotation.x = -tuck * 1.5;
-                this.parts.rlG.rotation.x = -tuck * 1.5;
-                this.parts.laG.rotation.x = tuck * 0.9;
-                this.parts.raG.rotation.x = tuck * 0.9;
+                // One leg forward, one backward (more natural)
+                this.parts.llG.rotation.x = -tuck * 1.4;
+                this.parts.rlG.rotation.x = tuck * 0.8;
+                // Arms in opposition to legs
+                this.parts.laG.rotation.x = tuck * 1.1; 
+                this.parts.raG.rotation.x = -tuck * 1.1;
             }
 
             // Tilt when switching lanes
