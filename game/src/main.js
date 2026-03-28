@@ -46,6 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if ((e.code === 'Space' || e.code === 'Enter') && (!game.active)) {
             initGame();
         }
+        if (e.code === 'KeyP' || e.code === 'Escape') {
+            game.togglePause();
+        }
     });
 
     function initGame() {
@@ -53,15 +56,12 @@ document.addEventListener('DOMContentLoaded', () => {
         game.clearPlayers();
         
         if (currentMode === 'human') {
-            // Add a single human player
             const controller = new HumanController();
             game.addPlayer(controller, 'human');
         } else if (currentMode === 'ai') {
-            // Add a single AI player that plays the best weights
             const controller = new AIController('ai');
             game.addPlayer(controller, 'ai-best');
         } else if (currentMode === 'train') {
-            // Add multiple AI players to demonstrate modularity
             for (let i = 0; i < AI_PLAYERS; i++) {
                 const controller = new AIController('train');
                 game.addPlayer(controller, `ai-train-${i}`);

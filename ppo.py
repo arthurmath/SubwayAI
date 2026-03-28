@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from torch.distributions.categorical import Categorical
 import os
 import glob
@@ -50,7 +49,7 @@ class ActorCritic(nn.Module):
 
 
 
-class PPOAgent:
+class Agent:
     def __init__(self, state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip):
         self.gamma = gamma
         self.eps_clip = eps_clip
@@ -64,7 +63,7 @@ class PPOAgent:
         
         self.policy_old = ActorCritic(state_dim, action_dim).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
-        self.MseLoss = nn.MSELoss()
+        self.loss = nn.MSELoss()
         
         # Ensure that simultaneous updates from multiple agents don't clash
         self.update_lock = asyncio.Lock()
@@ -79,6 +78,12 @@ class PPOAgent:
         buffer.logprobs.append(action_logprob)
         buffer.state_values.append(state_val)
         
+        return action.item()
+        
+    def predict_action(self, state):
+        with torch.no_grad():
+            state_t = torch.FloatTensor(state).to(device)
+            action, _, _ = self.policy_old.act(state_t)
         return action.item()
         
     async def update(self, buffer):
@@ -129,7 +134,7 @@ class PPOAgent:
                 surr1 = ratios * advantages
                 surr2 = torch.clamp(ratios, 1-self.eps_clip, 1+self.eps_clip) * advantages
                 
-                loss = -torch.min(surr1, surr2) + 0.5 * self.MseLoss(state_values, rewards) - 0.01 * dist_entropy
+                loss = -torch.min(surr1, surr2) + 0.5 * self.loss(state_values, rewards) - 0.01 * dist_entropy
                 
                 self.optimizer.zero_grad()
                 loss.mean().backward()
@@ -167,7 +172,7 @@ class PPOAgent:
         return False
         
     def save(self, score):
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M")
         filename = f"{weights_dir}/ppo_score_{int(score)}_{timestamp}.pth"
         torch.save(self.policy.state_dict(), filename)
         print(f"Saved weights to {filename}")

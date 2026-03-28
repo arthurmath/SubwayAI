@@ -2,15 +2,12 @@ import asyncio
 import websockets
 import json
 import numpy as np
-from ppo import PPOAgent
-
-import torch
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from ppo import Agent
 
 # Possible actions: 'L' (Left), 'R' (Right), 'J' (Jump), 'S' (Slide), or None (do nothing)
 ACTIONS = ['L', 'R', 'J', 'S', None]
 ACTION_DIM = len(ACTIONS)
-STATE_DIM = 17
+STATE_DIM = 16
 UPDATE_TIMESTEP = 2000
 
 
@@ -36,7 +33,7 @@ class RolloutBuffer:
 
 
 # Global PPO Agent instance
-ppo_agent = PPOAgent(
+ppo_agent = Agent(
     state_dim=STATE_DIM, 
     action_dim=ACTION_DIM, 
     lr_actor=0.0003, 
@@ -54,41 +51,54 @@ def extract_state(game_state):
     
     # 1. Player state
     state = [
-        player.get('lane', 1) / 2.0,
+        player.get('lane', 1) - 1.0, # Values: -1.0, 0.0, 1.0
         player.get('y', 0) / 3.0,
-        player.get('vy', 0) / 10.0,
+        1.0 if player.get('rolling', False) else 0.0, # sliding (bool 0 or 1)
         speed / 10.0
     ]
     
-    # 2. Obstacles: filter z < 2.0 and sort by z descending (closest ahead first)
-    obs_ahead = [o for o in obstacles if o.get('z', 0) < 2.0]
-    obs_ahead.sort(key=lambda o: o.get('z', 0), reverse=True)
-    
-    for i in range(3):
-        if i < len(obs_ahead):
-            obs = obs_ahead[i]
-            lane = obs.get('lane', 1) / 2.0
-            z = obs.get('z', 0) / 50.0
+    # 2. Obstacles: Track closest per lane
+    obs_by_lane = {}
+    for lane in range(3):
+        # find closest obstacle in this lane that is ahead (z < 0)
+        obs_in_lane = [o for o in obstacles if o.get('lane') == lane and o.get('z', 0) < 0]
+        obs_in_lane.sort(key=lambda o: o.get('z', 0), reverse=True) # closest is biggest z (least negative)
+        
+        if obs_in_lane:
+            obs = obs_in_lane[0]
+            obs_z = obs.get('z', 0)
+            z_norm = abs(obs_z) / 50.0 # distance normalized
             t = obs.get('type', 'low')
-            otype = 0.5 if t == 'low' else (1.0 if t == 'high' else 0.0)
-            state.extend([lane, z, otype])
+            otype = 1.0 if t == 'low' else (0.5 if t == 'high' else 0.0)
+            state.extend([z_norm, otype])
+            obs_by_lane[lane] = obs_z
         else:
-            state.extend([0.0, 0.0, 0.0])
+            state.extend([1.0, 0.0]) # Z = 1.0 (very far), Type = 0.0
+            obs_by_lane[lane] = -500.0 # No obstacle, very far
             
-    # 3. Coins: filter z < 2.0, sort by z descending
-    coins_ahead = [c for c in coins if c.get('z', 0) < 2.0]
-    coins_ahead.sort(key=lambda c: c.get('z', 0), reverse=True)
-    
-    for i in range(2):
-        if i < len(coins_ahead):
-            c = coins_ahead[i]
-            state.extend([c.get('lane', 1) / 2.0, c.get('z', 0) / 50.0])
+    # 3. Coins: Track next per lane
+    for lane in range(3):
+        coins_in_lane = [c for c in coins if c.get('lane') == lane and c.get('z', 0) < 0]
+        coins_in_lane.sort(key=lambda c: c.get('z', 0), reverse=True)
+        
+        obs_z = obs_by_lane[lane]
+        
+        if coins_in_lane:
+            first_coin = coins_in_lane[0]
+            z_norm = abs(first_coin.get('z', 0)) / 50.0
+            
+            # Count coins before the next obstacle in this lane
+            # Coins are before obstacle if their z is closer to 0 than obs_z (i.e., coin_z > obs_z)
+            count = sum(1 for c in coins_in_lane if c.get('z', 0) > obs_z)
+            state.extend([z_norm, float(count)])
         else:
-            state.extend([0.0, 0.0])
+            state.extend([1.0, 0.0]) # Dist 1.0, Count 0.0
             
     return state
 
 session_best_score = 0
+
+
 
 async def play_game(websocket):
     global session_best_score
@@ -106,7 +116,7 @@ async def play_game(websocket):
             msg_type = msg_data.get("type")
             
             if msg_type == "init":
-                mode = msg_data.get("mode", "train")
+                mode = msg_data.get("mode", "train") # récupère la valeur de la clé "mode" (défaut à "train" si clé absente)
                 print(f"Client initialized in mode: {mode}")
                 if mode == "ai":
                     ppo_agent.load_best()
@@ -160,14 +170,9 @@ async def play_game(websocket):
                     action_idx = ppo_agent.select_action(state_vec, local_buffer)
                 else:
                     # In 'ai' mode, just act greedily or sample, but don't store in buffer
-                    with torch.no_grad():
-                        state_t = torch.FloatTensor(state_vec).to(device)
-                        action, _, _ = ppo_agent.policy_old.act(state_t)
-                        action_idx = action.item()
+                    action_idx = ppo_agent.predict_action(state_vec)
                 
-                action = ACTIONS[action_idx]
-                
-                response = {"action": action}
+                response = {"action": ACTIONS[action_idx]}
                 await websocket.send(json.dumps(response))
             
     except websockets.exceptions.ConnectionClosed:
@@ -199,11 +204,9 @@ async def play_random(websocket):
 
             # Manually set custom probability array for actions.
             probs = np.array([0.1, 0.1, 0.1, 0.1, 0.6], dtype=np.float32)
-            probs = probs / probs.sum()
             action_idx = np.random.choice(len(ACTIONS), p=probs)
-            action = ACTIONS[action_idx]
 
-            response = {"action": action}
+            response = {"action": ACTIONS[action_idx]}
             await websocket.send(json.dumps(response))
 
     except websockets.exceptions.ConnectionClosed:

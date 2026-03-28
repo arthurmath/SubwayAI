@@ -109,26 +109,18 @@ function buildJake() {
     col.position.set(0, 1.17 * SCALE, 0.04 * SCALE);
     group.add(col);
 
-    const hood = createBox(0.48 * SCALE, 0.40 * SCALE, 0.22 * SCALE, 0xffffff);
-    hood.position.set(0, 1.40 * SCALE, -0.14 * SCALE);
-    group.add(hood);
-
     const nk = createBox(0.19 * SCALE, 0.14 * SCALE, 0.20 * SCALE, SK);
     nk.position.set(0, 1.21 * SCALE, 0);
     group.add(nk);
 
-    const head = createBox(0.42 * SCALE, 0.40 * SCALE, 0.40 * SCALE, SK);
-    head.position.set(0, 1.46 * SCALE, 0);
+    const head = createBox(0.42 * SCALE, 0.38 * SCALE, 0.40 * SCALE, SK);
+    head.position.set(0, 1.44 * SCALE, 0);
     group.add(head);
 
-    addFace(group, SK, 1.50 * SCALE);
+    addFace(group, SK, 1.48 * SCALE);
 
-    const hair = createBox(0.44 * SCALE, 0.10 * SCALE, 0.42 * SCALE, 0x2a1a0a);
-    hair.position.set(0, 1.68 * SCALE, 0);
-    group.add(hair);
-
-    const smallHat = createBox(0.38 * SCALE, 0.12 * SCALE, 0.38 * SCALE, SH);
-    smallHat.position.set(0, 1.76 * SCALE, 0);
+    const smallHat = createBox(0.34 * SCALE, 0.06 * SCALE, 0.34 * SCALE, SH);
+    smallHat.position.set(0, 1.65 * SCALE, 0);
     group.add(smallHat);
 
     const laG = addArm(group, -0.37 * SCALE, 0xffffff, SK);

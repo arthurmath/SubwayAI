@@ -11,6 +11,7 @@ class Game {
         this.speedMultiplier = 1.0;
         this.lastSpeedUpScore = 0;
         this.time = 0;
+        this.paused = false;
 
         this.setupPools();
         this.setupUI();
@@ -39,8 +40,12 @@ class Game {
     setupUI() {
         this.scoreEl = document.getElementById('score-val');
         this.coinEl = document.getElementById('coin-val');
+        this.aliveCountEl = document.getElementById('alive-count');
         this.flashEl = document.getElementById('speed-flash');
         this.goScreen = document.getElementById('go-screen');
+        this.paramsContainer = document.getElementById('ai-params-container');
+        this.pauseOverlay = document.getElementById('pause-overlay');
+        this.paramValueEls = {};
     }
 
     addPlayer(controller, id) {
@@ -61,9 +66,17 @@ class Game {
 
     start() {
         this.active = true;
+        this.paused = false;
+        if (this.pauseOverlay) this.pauseOverlay.classList.add('hidden');
         this.speedMultiplier = 1.0;
         this.lastSpeedUpScore = 0;
         this.time = 0;
+        
+        if (this.mode === 'train' && this.aliveCountEl) {
+            this.aliveCountEl.classList.remove('hidden');
+        } else if (this.aliveCountEl) {
+            this.aliveCountEl.classList.add('hidden');
+        }
         
         this.players.forEach(p => p.reset());
         this.clearEnvironment();
@@ -147,6 +160,12 @@ class Game {
     loop(timestamp) {
         if (!this.active) return;
 
+        if (this.paused) {
+            this.lastTimestamp = timestamp;
+            requestAnimationFrame((t) => this.loop(t));
+            return;
+        }
+
         const dt = Math.min((timestamp - this.lastTimestamp) / 1000, 0.05);
         this.lastTimestamp = timestamp;
         this.time += dt;
@@ -160,17 +179,29 @@ class Game {
         let maxScore = 0;
         let totalCoins = 0;
 
-        let gameState = null;
+        const gameState = {
+            obstacles: this.obstacles.filter(o => o.active).map(o => ({ lane: o.lane, z: o.mesh.position.z, type: o.type })),
+            coins: this.coins.filter(c => c.active).map(c => ({ lane: c.lane, z: c.z })),
+            speed: speed
+        };
+
+        // UI AI Parameters for Human Mode
+        if (this.mode === 'human' && this.paramsContainer) {
+            this.paramsContainer.classList.remove('hidden');
+            const humanPlayer = this.players.find(p => !p.dead);
+            if (humanPlayer) {
+                const aiState = this.extractAIState({
+                    player: { lane: humanPlayer.lane, x: humanPlayer.x, y: humanPlayer.y, vy: humanPlayer.vy, dead: humanPlayer.dead, score: humanPlayer.score, coins: humanPlayer.coins },
+                    ...gameState
+                });
+                this.updateParamsDisplay(aiState);
+            }
+        } else if (this.paramsContainer) {
+            this.paramsContainer.classList.add('hidden');
+        }
 
         this.players.forEach(p => {
             if (p.controller.update && typeof p.controller.update === 'function') {
-                if (!gameState) {
-                    gameState = {
-                        obstacles: this.obstacles.filter(o => o.active).map(o => ({ lane: o.lane, z: o.mesh.position.z, type: o.type })),
-                        coins: this.coins.filter(c => c.active).map(c => ({ lane: c.lane, z: c.z })),
-                        speed: speed
-                    };
-                }
                 p.controller.update({
                     player: { lane: p.lane, x: p.x, y: p.y, vy: p.vy, dead: p.dead, score: p.score, coins: p.coins },
                     ...gameState
@@ -206,6 +237,11 @@ class Game {
         // UI Updates
         this.scoreEl.textContent = Math.floor(maxScore) + 'm';
         this.coinEl.textContent = totalCoins;
+
+        if (this.mode === 'train' && this.aliveCountEl) {
+            const aliveCount = this.players.filter(p => !p.dead).length;
+            this.aliveCountEl.textContent = `Agents: ${aliveCount}/${this.players.length}`;
+        }
 
         // Camera follow (simple average of players)
         this.updateCamera();
@@ -317,6 +353,8 @@ class Game {
 
     gameOver(score, coins) {
         this.active = false;
+        this.paused = false;
+        if (this.pauseOverlay) this.pauseOverlay.classList.add('hidden');
         document.getElementById('go-score').textContent = Math.floor(score) + 'm';
         document.getElementById('go-coins-earned').textContent = '+' + coins + ' 🪙';
         this.goScreen.classList.remove('hidden');
@@ -337,10 +375,123 @@ class Game {
         }
 
         this.active = false;
+        this.paused = false;
+        if (this.pauseOverlay) this.pauseOverlay.classList.add('hidden');
         this.clearPlayers();
         
         document.getElementById('start-screen').classList.remove('hidden');
         document.getElementById('stop-training-btn').classList.add('hidden');
+        if (this.aliveCountEl) this.aliveCountEl.classList.add('hidden');
         this.goScreen.classList.add('hidden');
+    }
+
+    extractAIState(gameState) {
+        const player = gameState.player || {};
+        const obstacles = gameState.obstacles || [];
+        const coins = gameState.coins || [];
+        const speed = gameState.speed || 10.0;
+        
+        const state = {};
+        
+        // 1. Player (matches extract_state in main.py)
+        state['Lane'] = (player.lane ?? 1) - 1.0;
+        state['Y'] = (player.y ?? 0) / 3.0;
+        state['Sliding'] = player.rolling ? 1.0 : 0.0;
+        state['Speed'] = speed / 10.0;
+        
+        // 2. Obstacles: Next per lane
+        const obs_by_lane = {};
+        for (let lane = 0; lane < 3; lane++) {
+            const laneId = lane + 1;
+            const obs_in_lane = obstacles
+                .filter(o => o.lane === lane && (o.z ?? 0) < 0)
+                .sort((a, b) => (b.z ?? 0) - (a.z ?? 0));
+            
+            if (obs_in_lane.length > 0) {
+                const obs = obs_in_lane[0];
+                obs_by_lane[lane] = obs.z ?? 0;
+                state[`L${laneId}_Z`] = Math.abs(obs_by_lane[lane]) / 50.0;
+                const t = obs.type;
+                state[`L${laneId}_T`] = t === 'low' ? 1.0 : (t === 'high' ? 0.5 : 0.0);
+            } else {
+                obs_by_lane[lane] = -500.0;
+                state[`L${laneId}_Z`] = 1.0;
+                state[`L${laneId}_T`] = 0.0;
+            }
+        }
+        
+        // 3. Coins: Next per lane and Count before next obstacle
+        for (let lane = 0; lane < 3; lane++) {
+            const laneId = lane + 1;
+            const coins_in_lane = coins
+                .filter(c => c.lane === lane && (c.z ?? 0) < 0)
+                .sort((a, b) => (b.z ?? 0) - (a.z ?? 0));
+            
+            const obs_z = obs_by_lane[lane];
+            
+            if (coins_in_lane.length > 0) {
+                const first_coin = coins_in_lane[0];
+                state[`C${laneId}_Z`] = Math.abs(first_coin.z ?? 0) / 50.0;
+                
+                // Count coins before obstacle
+                const count = coins_in_lane.filter(c => (c.z ?? 0) > obs_z).length;
+                state[`C${laneId}_N`] = count;
+            } else {
+                state[`C${laneId}_Z`] = 1.0;
+                state[`C${laneId}_N`] = 0.0;
+            }
+        }
+        
+        return state;
+    }
+
+    updateParamsDisplay(state) {
+        if (!this.paramsContainer) return;
+
+        // If structure is not created yet
+        if (Object.keys(this.paramValueEls).length === 0) {
+            const layout = [
+                ['Lane', 'Y', 'L1_Z', 'L2_Z', 'L3_Z', 'C1_Z', 'C2_Z', 'C3_Z'],
+                ['Speed', 'Sliding', 'L1_T', 'L2_T', 'L3_T', 'C1_N', 'C2_N', 'C3_N']
+            ];
+
+            layout.forEach(rowKeys => {
+                const row = document.createElement('div');
+                row.className = 'param-row';
+                rowKeys.forEach(key => {
+                    const item = document.createElement('div');
+                    item.className = 'param-item';
+                    const name = document.createElement('div');
+                    name.className = 'param-name';
+                    name.textContent = key;
+                    const val = document.createElement('div');
+                    val.className = 'param-value';
+                    this.paramValueEls[key] = val;
+                    item.appendChild(name);
+                    item.appendChild(val);
+                    row.appendChild(item);
+                });
+                this.paramsContainer.appendChild(row);
+            });
+        }
+        
+        // Update values
+        for (const [key, value] of Object.entries(state)) {
+            if (this.paramValueEls[key]) {
+                this.paramValueEls[key].textContent = value.toFixed(2);
+            }
+        }
+    }
+
+    togglePause() {
+        if (!this.active) return;
+        this.paused = !this.paused;
+        if (this.pauseOverlay) {
+            if (this.paused) {
+                this.pauseOverlay.classList.remove('hidden');
+            } else {
+                this.pauseOverlay.classList.add('hidden');
+            }
+        }
     }
 }

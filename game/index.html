@@ -34,8 +34,11 @@
 
     <!-- HUD -->
     <div id="hud">
+        <div id="ai-params-container" class="hidden"></div>
+        <div id="pause-overlay" class="hidden">PAUSE</div>
         <button id="stop-training-btn" class="hidden" style="margin-bottom: 10px; padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; z-index: 100; pointer-events: auto;">🛑 STOP TRAINING</button>
         <div id="score-val">0m</div>
+        <div id="alive-count" class="hidden">Agents: 0/0</div>
         <div id="coin-row">
             <div class="coin-icon"></div>
             <span id="coin-val">0</span>

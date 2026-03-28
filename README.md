@@ -1,14 +1,45 @@
 Play game : 
 
 Open HTML file in your browser:
-C:/Users/Projects/SubwayAI/game/index.html
+file:///Users/arthurmathorel/Documents/Github/SubwayAI/game/index.html
+
+Train/use AI:
+python3 main.py
 
 PascalCase is used for files that export a Class or a React Component, while lowercase/camelCase is used for utility files, constants, or entry points.
 
 
-étoiles dans les pièces
+
+## 1. Paramètres du Joueur 
+- **Lane** : Position horizontale actuelle (-1.0: gauche, 0.0: milieu, 1.0: droite).
+- **Y** : Hauteur actuelle du joueur (normalisée par 3.0).
+- **Sliding** : Indique si le joueur est en train de glisser/rouler (0.0 ou 1.0).
+- **Speed** : Vitesse actuelle du jeu (normalisée par 10.0).
+
+## 2. Obstacles 
+- **LX_Z** : Distance de l'obstacle par rapport au joueur. X varie de 1 à 3. Plus la valeur est proche de 0.0, plus l'obstacle est proche. Défaut à 1.0 si aucun obstacle n'est visible. 
+- **LX_T** : Type de l'obstacle pour savoir comment l'esquiver :
+    - `0.0` : **Train** (doit être évité en changeant de voie ou en sautant dessus).
+    - `0.5` : **Clôture haute** (on doit obligatoirement glisser dessous).
+    - `1.0` : **Barrière basse** (on peut sauter par-dessus ou glisser dessous).
+
+## 3. Pièces 
+- **CX_Z** : Distance de la prochaine pièce sur cette voie. Défaut à 1.0 si aucune pièce n'est visible. 
+- **CX_N** : Nombre de pièces présentes sur cette voie **avant** d'atteindre le prochain obstacle.
+
+
+
+To Do : 
+
+
+IA : 
+bug ia reste en train de sauter
+
+
+
+Front : 
 jambes une qui va devant, l'autre qui va derrière
 les sauts de pièces doivent etre plus haut et plus longs
-afficher nombre d'agent encore en vie
-bug ia reste en train de sauter
+Remonter les panneaux pour que l'on puisse slider dessous
+étoiles dans les pièces
 bouger un peu la caméra quand on change de line

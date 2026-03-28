@@ -32,9 +32,71 @@ canvas { display:block; }
 /* HUD */
 #hud{position:fixed;top:0;left:0;right:0;padding:18px 20px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;z-index:50;}
 #score-val{font-size:44px;font-weight:900;color:#fff;letter-spacing:2px;line-height:1;text-shadow:0 3px 12px rgba(0,0,0,.9);-webkit-text-stroke:1px rgba(0,0,0,.3);}
+#alive-count{font-size:18px;font-weight:900;color:#00ff00;text-shadow:0 2px 6px rgba(0,0,0,.9);margin-top: -4px;}
 #coin-row{display:flex;align-items:center;gap:8px;}
 .coin-icon{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#fff59a,#ffd700 45%,#cc8800);border:2px solid #bb7700;box-shadow:0 0 10px rgba(255,200,0,.7);}
 #coin-val{font-size:22px;font-weight:900;color:#FFD700;text-shadow:0 2px 6px rgba(0,0,0,.9);}
+
+/* AI PARAMS */
+#ai-params-container {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.param-row {
+    display: flex;
+    gap: 12px;
+}
+
+.param-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 45px;
+}
+
+.param-name {
+    font-family: 'Arial', sans-serif;
+    font-size: 9px;
+    color: #aaa;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+
+.param-value {
+    font-family: 'Arial', sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    color: #fff;
+}
+
+/* PAUSE OVERLAY */
+#pause-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 15vh;
+    font-size: 80px;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.2);
+    letter-spacing: 15px;
+    pointer-events: none;
+    z-index: 40;
+    text-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
 
 /* SPEED FLASH */
 #speed-flash{position:fixed;top:88px;left:50%;transform:translateX(-50%);font-size:28px;font-weight:900;color:#FF6600;text-shadow:0 0 24px #FF9900;pointer-events:none;z-index:55;opacity:0;transition:opacity .25s;letter-spacing:3px;white-space:nowrap;}
