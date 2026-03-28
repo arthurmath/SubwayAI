@@ -34,6 +34,8 @@ Le système suit les pièces sur **chacune des trois voies**, en ne considérant
 To Do : 
 
 IA : 
+tracer graphiques top performance et avergae perf
+Afficher le nombre d'itération d'entrainnement faites (et nombre de .train ?) 
 bug ia reste en train de sauter
 
 
