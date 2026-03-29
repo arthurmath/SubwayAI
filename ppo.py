@@ -9,7 +9,7 @@ import asyncio
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-weights_dir = "weights"
+weights_dir = "results/weights"
 os.makedirs(weights_dir, exist_ok=True)
 
 
@@ -69,7 +69,7 @@ class Agent:
         # Ensure that simultaneous updates from multiple agents don't clash
         self.update_lock = asyncio.Lock()
         
-        
+
     def select_action(self, state, buffer=None):
         with torch.no_grad():
             state_t = torch.FloatTensor(state).to(device)
@@ -170,7 +170,7 @@ class Agent:
         return False
         
     def save(self, score):
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"{weights_dir}/ppo_score_{int(score)}_{timestamp}.pth"
         torch.save(self.policy.state_dict(), filename)
         print(f"Saved weights to {filename}")

@@ -34,9 +34,9 @@ Le système suit les pièces sur **chacune des trois voies**, en ne considérant
 To Do : 
 
 IA : 
-tracer graphiques top performance et avergae perf
-Afficher le nombre d'itération d'entrainnement faites (et nombre de .train ?) 
-bug ia reste en train de sauter
+petit lag au début de la partie, les obstacles doievtn commencer un peu plus tard
+warm start depuis weights
+actions trop rapides, baisser frequence connexion
 
 
 

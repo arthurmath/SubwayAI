@@ -34,6 +34,12 @@
 
     <!-- HUD -->
     <div id="hud">
+        <div id="ai-stats" class="hidden">
+            <div class="stat-item">Iteration: <span id="stat-iteration">0</span></div>
+            <div class="stat-item">Trainings: <span id="stat-train-count">0</span></div>
+            <div class="stat-item">Best Run: <span id="stat-best-dist">0m</span></div>
+            <div class="stat-item">Current Reward: <span id="stat-reward">0.00</span></div>
+        </div>
         <div id="ai-params-container" class="hidden"></div>
         <div id="pause-overlay" class="hidden">PAUSE</div>
         <button id="stop-training-btn" class="hidden" style="margin-bottom: 10px; padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; z-index: 100; pointer-events: auto;">🛑 STOP TRAINING</button>

@@ -80,6 +80,14 @@ class AIController extends Controller {
             if (data.action) {
                 this.addAction(data.action);
             }
+            if (data.iteration !== undefined) {
+                this.stats = {
+                    iteration: data.iteration,
+                    trainCount: data.train_count,
+                    bestScore: data.best_score,
+                    reward: data.reward
+                };
+            }
             this.waitingForAction = false;
         };
 

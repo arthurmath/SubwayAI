@@ -1,8 +1,9 @@
 import json
 import asyncio
 import websockets
+import time
 from ppo import Agent
-from utils import RolloutBuffer, extract_state
+from utils import RolloutBuffer, extract_state, save_plots
 
 
 # Left, Right, Jump, Slide, Nothing
@@ -10,8 +11,6 @@ ACTIONS = ['L', 'R', 'J', 'S', None]
 ACTION_DIM = len(ACTIONS)
 STATE_DIM = 16
 UPDATE_TIMESTEP = 2000
-
-
 
 
 agent = Agent(
@@ -25,12 +24,46 @@ agent = Agent(
 )
 
 session_best_score = 0
+iteration_count = 0
+train_count = 0
+last_iteration_time = 0
+
+# History tracking
+scores_history = [] # list of dict {'iteration': int, 'avg_score': float, 'best_score': float}
+rewards_history = [] # list of dict {'iteration': int, 'avg_reward': float, 'best_reward': float}
+episode_scores = [] # stores scores of agents that died
+history_lock = asyncio.Lock()
 
 
+async def perform_training(buffer, score, current_timestep):
+    global train_count, iteration_count, session_best_score
+    
+    # Capture stats before buffer is cleared during training
+    mean_reward = sum(buffer.rewards) / len(buffer.rewards) if buffer.rewards else 0
+    best_reward_in_buffer = max(buffer.rewards) if buffer.rewards else 0
+    
+    print(f"Training PPO (local timestep {current_timestep}, buffer {len(buffer.states)})...")
+    await agent.train(buffer)
+    
+    async with history_lock:
+        train_count += 1
+        avg_score = sum(episode_scores) / len(episode_scores) if episode_scores else score
+        scores_history.append({
+            'iteration': iteration_count,
+            'avg_score': avg_score,
+            'best_score': session_best_score
+        })
+        rewards_history.append({
+            'iteration': iteration_count,
+            'avg_reward': mean_reward,
+            'best_reward': best_reward_in_buffer
+        })
+        episode_scores.clear()
+    print(f"Training complete. Total trainings: {train_count}")
 
 
 async def play_game(websocket):
-    global session_best_score
+    global session_best_score, iteration_count, train_count, last_iteration_time
     print("New connection from game client!")
     
     local_buffer = RolloutBuffer()
@@ -38,6 +71,7 @@ async def play_game(websocket):
     last_coins = 0
     timestep = 0
     mode = "train"
+    current_reward = 0
     
     try:
         async for message in websocket:
@@ -47,13 +81,21 @@ async def play_game(websocket):
             if msg_type == "init":
                 mode = msg_data.get("mode", "train") # récupère la valeur de la clé "mode" (défaut à "train" si clé absente)
                 print(f"Client initialized in mode: {mode}")
+                if mode == "train":
+                    async with history_lock:
+                        current_time = time.time()
+                        if current_time - last_iteration_time > 1.0: # 1 second cooldown for new game session
+                            iteration_count += 1
+                            last_iteration_time = current_time
+                            print(f"NEW GAME ITERATION: {iteration_count}")
                 if mode == "ai":
                     agent.load_best()
                 continue
                 
             elif msg_type == "save":
-                print(f"Received save request. Saving weights with best score: {session_best_score}")
+                print(f"Training stopped. Saving weights and plots.")
                 agent.save(session_best_score)
+                save_plots(scores_history, rewards_history)
                 continue
                 
             elif msg_type == "state":
@@ -77,19 +119,21 @@ async def play_game(websocket):
                         
                         local_buffer.rewards.append(reward)
                         local_buffer.is_terminals.append(dead)
+                        current_reward = reward
                         
                         timestep += 1
                         
                         # Perform PPO update if we have enough experiences
                         if timestep % UPDATE_TIMESTEP == 0:
-                            print(f"Training PPO (local timestep {timestep})...")
-                            await agent.train(local_buffer)
-                            print("Training complete.")
+                            await perform_training(local_buffer, score, timestep)
                 
                 last_score = score
                 last_coins = coins
                 
                 if dead and mode == "train":
+                    # Store the score for averaging
+                    async with history_lock:
+                        episode_scores.append(score)
                     # Agent died, JS client will auto-restart and establish a new connection.
                     continue
                     
@@ -101,7 +145,13 @@ async def play_game(websocket):
                     # In 'ai player' mode, don't store in buffer
                     action = agent.select_action(state)
                 
-                response = {"action": ACTIONS[action]}
+                response = {
+                    "action": ACTIONS[action],
+                    "iteration": int(iteration_count),
+                    "train_count": int(train_count),
+                    "best_score": float(session_best_score),
+                    "reward": float(current_reward)
+                }
                 await websocket.send(json.dumps(response))
             
     except websockets.exceptions.ConnectionClosed:
@@ -116,9 +166,9 @@ async def play_game(websocket):
                 local_buffer.logprobs.pop()
                 local_buffer.state_values.pop()
                 
-            # Optional: Train on remaining experiences before throwing away buffer
+            # Train on remaining experiences
             if len(local_buffer.states) > 0:
-                await agent.train(local_buffer)
+                await perform_training(local_buffer, last_score, timestep)
 
 
 
@@ -132,4 +182,7 @@ async def main():
         await asyncio.Future()  # run forever
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nServer stopped")

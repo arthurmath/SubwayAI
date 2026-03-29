@@ -44,6 +44,11 @@ class Game {
         this.flashEl = document.getElementById('speed-flash');
         this.goScreen = document.getElementById('go-screen');
         this.paramsContainer = document.getElementById('ai-params-container');
+        this.statsContainer = document.getElementById('ai-stats');
+        this.statIterationEl = document.getElementById('stat-iteration');
+        this.statTrainCountEl = document.getElementById('stat-train-count');
+        this.statBestDistEl = document.getElementById('stat-best-dist');
+        this.statRewardEl = document.getElementById('stat-reward');
         this.pauseOverlay = document.getElementById('pause-overlay');
         this.paramValueEls = {};
     }
@@ -74,8 +79,10 @@ class Game {
         
         if (this.mode === 'train' && this.aliveCountEl) {
             this.aliveCountEl.classList.remove('hidden');
+            if (this.statsContainer) this.statsContainer.classList.remove('hidden');
         } else if (this.aliveCountEl) {
             this.aliveCountEl.classList.add('hidden');
+            if (this.statsContainer) this.statsContainer.classList.add('hidden');
         }
         
         this.players.forEach(p => p.reset());
@@ -239,8 +246,23 @@ class Game {
         this.coinEl.textContent = totalCoins;
 
         if (this.mode === 'train' && this.aliveCountEl) {
-            const aliveCount = this.players.filter(p => !p.dead).length;
+            const alivePlayers = this.players.filter(p => !p.dead);
+            const aliveCount = alivePlayers.length;
             this.aliveCountEl.textContent = `Agents: ${aliveCount}/${this.players.length}`;
+            
+            // Find any player that has stats (prioritize alive ones)
+            let statsSource = alivePlayers.find(p => p.controller && p.controller.stats);
+            if (!statsSource) {
+                statsSource = this.players.find(p => p.controller && p.controller.stats);
+            }
+
+            if (statsSource && statsSource.controller.stats) {
+                const stats = statsSource.controller.stats;
+                if (this.statIterationEl) this.statIterationEl.textContent = stats.iteration;
+                if (this.statTrainCountEl) this.statTrainCountEl.textContent = stats.trainCount;
+                if (this.statBestDistEl) this.statBestDistEl.textContent = Math.floor(stats.bestScore) + 'm';
+                if (this.statRewardEl) this.statRewardEl.textContent = stats.reward.toFixed(2);
+            }
         }
 
         // Camera follow (simple average of players)
@@ -383,6 +405,7 @@ class Game {
         document.getElementById('start-screen').classList.remove('hidden');
         document.getElementById('stop-training-btn').classList.add('hidden');
         if (this.aliveCountEl) this.aliveCountEl.classList.add('hidden');
+        if (this.statsContainer) this.statsContainer.classList.add('hidden');
         this.goScreen.classList.add('hidden');
     }
 
