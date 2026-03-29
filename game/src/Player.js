@@ -253,6 +253,7 @@ class Player {
 
     triggerDeath() {
         this.dead = true;
+        this.mesh.visible = false;
         this.resetVisuals();
         // Death animation can be added here
     }

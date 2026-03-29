@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const goScreen = document.getElementById('go-screen');
     
     let currentMode = 'human';
+    let currentGameId = 0;
 
     // Toggle Mode Selection
     function setMode(mode, btn) {
@@ -52,6 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function initGame() {
+        currentGameId++;
+        
         // Clear previous players
         game.clearPlayers();
         
@@ -59,11 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const controller = new HumanController();
             game.addPlayer(controller, 'human');
         } else if (currentMode === 'ai') {
-            const controller = new AIController('ai');
+            const controller = new AIController('ai', currentGameId);
             game.addPlayer(controller, 'ai-best');
         } else if (currentMode === 'train') {
             for (let i = 0; i < AI_PLAYERS; i++) {
-                const controller = new AIController('train');
+                const controller = new AIController('train', currentGameId, i * 35);
                 game.addPlayer(controller, `ai-train-${i}`);
             }
         }

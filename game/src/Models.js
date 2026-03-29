@@ -83,11 +83,12 @@ function buildJake() {
     group.rotation.y = Math.PI; // Face away from camera
     const SCALE = 0.95; // Make character smaller
 
-    const SK = 0xfce1c5, HO = 0x1a3a6a, VS = 0x1a3a6a, SH = 0xcc2222, JN = 0x1a3a6a;
-    const torso = createBox(0.56 * SCALE, 0.62 * SCALE, 0.36 * SCALE, HO);
+    const SK = 0xfce1c5, HO = 0xffffff, VS = 0x1a3a6a, SH = 0xcc2222, JN = 0x1a3a6a;
+    const torso = createBox(0.56 * SCALE, 0.62 * SCALE, 0.36 * SCALE, VS);
     torso.position.set(0, 0.87 * SCALE, 0);
     group.add(torso);
 
+    // Blue Vest Panels (over white hoodie)
     const vf = createBox(0.58 * SCALE, 0.55 * SCALE, 0.06 * SCALE, VS);
     vf.position.set(0, 0.90 * SCALE, 0.19 * SCALE);
     group.add(vf);
@@ -100,6 +101,7 @@ function buildJake() {
     vr.position.set(0.30 * SCALE, 0.90 * SCALE, 0);
     group.add(vr);
 
+    // Red Undershirt detail
     const col = createBox(0.32 * SCALE, 0.09 * SCALE, 0.30 * SCALE, SH);
     col.position.set(0, 1.17 * SCALE, 0.04 * SCALE);
     group.add(col);
@@ -112,14 +114,26 @@ function buildJake() {
     head.position.set(0, 1.44 * SCALE, 0);
     group.add(head);
 
-    addFace(group, SK, 1.48 * SCALE);
+    // addFace(group, SK, 1.48 * SCALE);
 
-    const smallHat = createBox(0.34 * SCALE, 0.06 * SCALE, 0.34 * SCALE, SH);
-    smallHat.position.set(0, 1.65 * SCALE, 0);
-    group.add(smallHat);
+    // SUBWAY SURFERS HAT & HOOD
+    // White Hoodie/Cap Base
+    const hatBase = createBox(0.46 * SCALE, 0.42 * SCALE, 0.44 * SCALE, HO);
+    hatBase.position.set(0, 1.55 * SCALE, -0.04 * SCALE);
+    group.add(hatBase);
 
-    const laG = addArm(group, -0.37 * SCALE, 0xffffff, SK);
-    const raG = addArm(group, 0.37 * SCALE, 0xffffff, SK);
+    // Red Front Panel of Cap
+    const capFront = createBox(0.46 * SCALE, 0.18 * SCALE, 0.08 * SCALE, SH);
+    capFront.position.set(0, 1.66 * SCALE, 0.18 * SCALE);
+    group.add(capFront);
+
+    // Red Brim/Visor
+    const brim = createBox(0.46 * SCALE, 0.06 * SCALE, 0.34 * SCALE, SH);
+    brim.position.set(0, 1.55 * SCALE, 0.34 * SCALE);
+    group.add(brim);
+
+    const laG = addArm(group, -0.37 * SCALE, HO, SK);
+    const raG = addArm(group, 0.37 * SCALE, HO, SK);
     const llG = addLeg(group, -0.14 * SCALE, JN);
     const rlG = addLeg(group, 0.14 * SCALE, JN);
     const lShoeG = addShoe(llG, 0, 0x228822, null, 0x222222);
