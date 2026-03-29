@@ -385,7 +385,7 @@ class Game {
         if (this.mode === 'train') {
             setTimeout(() => {
                 this.goScreen.click();
-            }, 100);
+            }, 1000);
         }
     }
 

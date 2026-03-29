@@ -62,43 +62,54 @@ class HumanController extends Controller {
 
 
 class AIController extends Controller {
-    constructor(mode = 'ai') {
+    constructor(mode = 'ai', gameId = 0, connectionDelay = 0) {
         super();
         this.mode = mode;
-        this.socket = new WebSocket('ws://localhost:8765');
+        this.gameId = gameId;
         this.waitingForAction = false;
         this.initialized = false;
 
-        this.socket.onopen = () => {
-            console.log('Connected to AI Server in ' + this.mode + ' mode');
-            this.socket.send(JSON.stringify({ type: 'init', mode: this.mode }));
-            this.initialized = true;
+        const connect = () => {
+            this.socket = new WebSocket('ws://127.0.0.1:8765');
+            
+            this.socket.onopen = () => {
+                console.log('Connected to AI Server in ' + this.mode + ' mode');
+                this.socket.send(JSON.stringify({ type: 'init', mode: this.mode, game_id: this.gameId }));
+                this.initialized = true;
+            };
+
+            this.socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.action) {
+                    this.addAction(data.action);
+                }
+                if (data.iteration !== undefined) {
+                    this.stats = {
+                        iteration: data.iteration,
+                        trainCount: data.train_count,
+                        bestScore: data.best_score,
+                        reward: data.reward
+                    };
+                }
+                this.waitingForAction = false;
+            };
+
+            this.socket.onclose = () => {
+                console.log('Disconnected from AI Server');
+                this.initialized = false;
+            };
         };
 
-        this.socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.action) {
-                this.addAction(data.action);
-            }
-            if (data.iteration !== undefined) {
-                this.stats = {
-                    iteration: data.iteration,
-                    trainCount: data.train_count,
-                    bestScore: data.best_score,
-                    reward: data.reward
-                };
-            }
-            this.waitingForAction = false;
-        };
-
-        this.socket.onclose = () => {
-            console.log('Disconnected from AI Server');
-        };
+        if (connectionDelay > 0) {
+            setTimeout(connect, connectionDelay);
+        } else {
+            connect();
+        }
     }
 
     // This method can be called by the RL agent to decide on actions
     update(gameState) {
-        if (!this.initialized) return;
+        if (!this.initialized || !this.socket) return;
         if (!this.waitingForAction && this.socket.readyState === WebSocket.OPEN) {
             this.socket.send(JSON.stringify({ type: 'state', data: gameState }));
             this.waitingForAction = true;
@@ -106,7 +117,7 @@ class AIController extends Controller {
     }
 
     saveWeights() {
-        if (this.socket.readyState === WebSocket.OPEN) {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.socket.send(JSON.stringify({ type: 'save' }));
         }
     }

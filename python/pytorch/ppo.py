@@ -9,7 +9,7 @@ import asyncio
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-weights_dir = "results/weights"
+weights_dir = "pytorch/results/weights"
 os.makedirs(weights_dir, exist_ok=True)
 
 

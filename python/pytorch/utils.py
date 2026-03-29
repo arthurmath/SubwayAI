@@ -22,6 +22,14 @@ class RolloutBuffer:
         del self.state_values[:]
         del self.is_terminals[:]
 
+    def extend(self, other):
+        self.actions.extend(other.actions)
+        self.states.extend(other.states)
+        self.logprobs.extend(other.logprobs)
+        self.rewards.extend(other.rewards)
+        self.state_values.extend(other.state_values)
+        self.is_terminals.extend(other.is_terminals)
+
 
 
 
@@ -89,7 +97,7 @@ def save_plots(scores_history, rewards_history):
     scores_history: list of dict {'iteration': int, 'avg_score': float, 'best_score': float}
     rewards_history: list of dict {'iteration': int, 'avg_reward': float, 'best_reward': float}
     """
-    os.makedirs("results/plots", exist_ok=True)
+    os.makedirs("pytorch/results/plots", exist_ok=True)
     
     if not scores_history or not rewards_history:
         print("No data to plot.")
@@ -107,7 +115,7 @@ def save_plots(scores_history, rewards_history):
     plt.title('Score en fonction de l\'itération')
     plt.legend()
     plt.grid(True)
-    plt.savefig('results/plots/scores.png')
+    plt.savefig('pytorch/results/plots/scores.png')
     plt.close()
 
     iterations_r = [d['iteration'] for d in rewards_history]
@@ -122,9 +130,9 @@ def save_plots(scores_history, rewards_history):
     plt.title('Reward en fonction de l\'itération')
     plt.legend()
     plt.grid(True)
-    plt.savefig('results/plots/rewards.png')
+    plt.savefig('pytorch/results/plots/rewards.png')
     plt.close()
-    print("Plots saved in results/plots/")
+    print("Plots saved in pytorch/results/plots/")
 
 
 

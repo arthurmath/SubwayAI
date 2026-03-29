@@ -1,10 +1,13 @@
 import json
 import asyncio
 import websockets
-import time
+import logging
 from ppo import Agent
 from utils import RolloutBuffer, extract_state, save_plots
 
+
+# Configure logging to suppress noisy websocket handshake errors
+logging.getLogger('websockets').setLevel(logging.ERROR)
 
 # Left, Right, Jump, Slide, Nothing
 ACTIONS = ['L', 'R', 'J', 'S', None]
@@ -26,7 +29,10 @@ agent = Agent(
 session_best_score = 0
 iteration_count = 0
 train_count = 0
-last_iteration_time = 0
+current_game_id = -1
+global_buffer = RolloutBuffer()
+global_timestep_count = 0
+
 
 # History tracking
 scores_history = [] # list of dict {'iteration': int, 'avg_score': float, 'best_score': float}
@@ -35,14 +41,17 @@ episode_scores = [] # stores scores of agents that died
 history_lock = asyncio.Lock()
 
 
-async def perform_training(buffer, score, current_timestep):
-    global train_count, iteration_count, session_best_score
+async def perform_training(buffer, score):
+    global train_count, iteration_count, session_best_score, global_timestep_count
     
+    if len(buffer.states) == 0:
+        return
+
     # Capture stats before buffer is cleared during training
     mean_reward = sum(buffer.rewards) / len(buffer.rewards) if buffer.rewards else 0
     best_reward_in_buffer = max(buffer.rewards) if buffer.rewards else 0
     
-    print(f"Training PPO (local timestep {current_timestep}, buffer {len(buffer.states)})...")
+    print(f"Training PPO (buffer size: {len(buffer.states)})...")
     await agent.train(buffer)
     
     async with history_lock:
@@ -59,17 +68,17 @@ async def perform_training(buffer, score, current_timestep):
             'best_reward': best_reward_in_buffer
         })
         episode_scores.clear()
+        global_timestep_count = 0
     print(f"Training complete. Total trainings: {train_count}")
 
 
 async def play_game(websocket):
-    global session_best_score, iteration_count, train_count, last_iteration_time
+    global session_best_score, iteration_count, train_count, current_game_id, global_timestep_count
     print("New connection from game client!")
     
     local_buffer = RolloutBuffer()
     last_score = 0
     last_coins = 0
-    timestep = 0
     mode = "train"
     current_reward = 0
     
@@ -80,14 +89,18 @@ async def play_game(websocket):
             
             if msg_type == "init":
                 mode = msg_data.get("mode", "train") # récupère la valeur de la clé "mode" (défaut à "train" si clé absente)
-                print(f"Client initialized in mode: {mode}")
-                if mode == "train":
+                game_id = msg_data.get("game_id", -1)
+                print(f"Client initialized in mode: {mode} (game_id: {game_id})")
+                if mode == "train" and game_id != -1:
                     async with history_lock:
-                        current_time = time.time()
-                        if current_time - last_iteration_time > 1.0: # 1 second cooldown for new game session
+                        if game_id != current_game_id:
+                            current_game_id = game_id
                             iteration_count += 1
-                            last_iteration_time = current_time
                             print(f"NEW GAME ITERATION: {iteration_count}")
+                            
+                            # Check if we should train at the start of new iteration
+                            if global_timestep_count >= UPDATE_TIMESTEP:
+                                await perform_training(global_buffer, session_best_score)
                 if mode == "ai":
                     agent.load_best()
                 continue
@@ -120,12 +133,6 @@ async def play_game(websocket):
                         local_buffer.rewards.append(reward)
                         local_buffer.is_terminals.append(dead)
                         current_reward = reward
-                        
-                        timestep += 1
-                        
-                        # Perform PPO update if we have enough experiences
-                        if timestep % UPDATE_TIMESTEP == 0:
-                            await perform_training(local_buffer, score, timestep)
                 
                 last_score = score
                 last_coins = coins
@@ -134,6 +141,10 @@ async def play_game(websocket):
                     # Store the score for averaging
                     async with history_lock:
                         episode_scores.append(score)
+                        # Move local experiences to global buffer
+                        global_buffer.extend(local_buffer)
+                        global_timestep_count += len(local_buffer.states)
+                        local_buffer.clear()
                     # Agent died, JS client will auto-restart and establish a new connection.
                     continue
                     
@@ -166,19 +177,22 @@ async def play_game(websocket):
                 local_buffer.logprobs.pop()
                 local_buffer.state_values.pop()
                 
-            # Train on remaining experiences
+            # Move remaining local experiences to global buffer
             if len(local_buffer.states) > 0:
-                await perform_training(local_buffer, last_score, timestep)
+                async with history_lock:
+                    global_buffer.extend(local_buffer)
+                    global_timestep_count += len(local_buffer.states)
+                    local_buffer.clear()
 
 
 
 
-    
+
 
 async def main():
     port = 8765
-    print(f"Starting Python PPO AI Server on ws://localhost:{port}")
-    async with websockets.serve(play_game, "localhost", port):
+    print(f"Starting Python PPO AI Server on ws://127.0.0.1:{port}")
+    async with websockets.serve(play_game, "127.0.0.1", port):
         await asyncio.Future()  # run forever
 
 if __name__ == "__main__":
