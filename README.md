@@ -34,12 +34,28 @@ Le système suit les pièces sur **chacune des trois voies**, en ne considérant
 To Do : 
 
 IA : 
-petit lag au début de la partie, les obstacles doievtn commencer un peu plus tard
-warm start depuis weights
+quand agent joue (pas train), ne pas prendre sample mais max probas actions. meme pendant training, vu qu'il fait beaucoup d'actions par seconde, il finira forcement par toucher 2 fois un mur ou faire une action random qui le fait aller dans un camion sur le coté (il ne reste pas en place).
 actions trop rapides, baisser frequence connexion
+récompense supplémentaire quand obstacle passé
+warm start depuis weights
 
 
 
 Front : 
 longueur des sauts de pièces doivent etre plus longs quand vitesse augmente (nb pièces aussi)
 bouger un peu la caméra quand on change de line (pas mode IA multiples)
+
+
+
+
+
+
+Save weights command:
+
+python -c "
+import asyncio, websockets, json
+async def send_save():
+    async with websockets.connect('ws://127.0.0.1:8765') as ws:
+        await ws.send(json.dumps({'type': 'save'}))
+asyncio.run(send_save())
+"

@@ -9,7 +9,7 @@ import asyncio
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-weights_dir = "pytorch/results/weights"
+weights_dir = "python/pytorch/results/weights"
 os.makedirs(weights_dir, exist_ok=True)
 
 
@@ -121,7 +121,7 @@ class Agent:
             advantages = rewards.detach() - old_state_values.detach()
             
             # Optimize policy for K epochs
-            for _ in range(self.epochs):
+            for epoch in range(self.epochs):
                 logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
                 state_values = torch.squeeze(state_values)
                 if len(state_values.shape) == 0:

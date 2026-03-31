@@ -11,14 +11,12 @@ logging.getLogger('websockets').setLevel(logging.ERROR)
 
 # Left, Right, Jump, Slide, Nothing
 ACTIONS = ['L', 'R', 'J', 'S', None]
-ACTION_DIM = len(ACTIONS)
-STATE_DIM = 16
 UPDATE_TIMESTEP = 2000
 
 
 agent = Agent(
-    state_dim=STATE_DIM, 
-    action_dim=ACTION_DIM, 
+    state_dim=16, 
+    action_dim=len(ACTIONS), 
     lr_actor=0.0003, 
     lr_critic=0.001, 
     gamma=0.99, 
@@ -35,9 +33,9 @@ global_timestep_count = 0
 
 
 # History tracking
-scores_history = [] # list of dict {'iteration': int, 'avg_score': float, 'best_score': float}
-rewards_history = [] # list of dict {'iteration': int, 'avg_reward': float, 'best_reward': float}
-episode_scores = [] # stores scores of agents that died
+scores_history = [] 
+rewards_history = [] 
+episode_scores = [] 
 history_lock = asyncio.Lock()
 
 
@@ -46,13 +44,13 @@ async def perform_training(buffer, score):
     
     if len(buffer.states) == 0:
         return
+    
+    print(f"\nTraining PPO (buffer size: {len(buffer.states)})")
+    await agent.train(buffer)
 
     # Capture stats before buffer is cleared during training
     mean_reward = sum(buffer.rewards) / len(buffer.rewards) if buffer.rewards else 0
     best_reward_in_buffer = max(buffer.rewards) if buffer.rewards else 0
-    
-    print(f"\nTraining PPO (buffer size: {len(buffer.states)})...")
-    await agent.train(buffer)
     
     async with history_lock:
         train_count += 1
@@ -69,12 +67,11 @@ async def perform_training(buffer, score):
         })
         episode_scores.clear()
         global_timestep_count = 0
-    print(f"Training complete. Total trainings: {train_count}")
+    print(f"Training complete. Total trainings: {train_count}\n")
 
 
 async def play_game(websocket):
     global session_best_score, iteration_count, train_count, current_game_id, global_timestep_count
-    # print("New connection from game client!")
     
     local_buffer = RolloutBuffer()
     last_score = 0
@@ -92,15 +89,16 @@ async def play_game(websocket):
                 game_id = msg_data.get("game_id", -1)
                 # print(f"Client initialized in mode: {mode}")
                 if mode == "train" and game_id != -1:
+                    should_train = False
                     async with history_lock:
                         if game_id != current_game_id:
                             current_game_id = game_id
                             iteration_count += 1
                             print(f"Game iteration: {iteration_count}")
-                            
-                            # Check if we should train at the start of new iteration
                             if global_timestep_count >= UPDATE_TIMESTEP:
-                                await perform_training(global_buffer, session_best_score)
+                                should_train = True
+                    if should_train:
+                        await perform_training(global_buffer, session_best_score)
                 if mode == "ai":
                     agent.load_best()
                 continue
@@ -124,11 +122,13 @@ async def play_game(websocket):
                 if mode == "train":
                     # If we took an action in the previous step, calculate its reward
                     if len(local_buffer.states) > len(local_buffer.rewards):
-                        reward = 0.1  # Base survival bonus
+                        if not dead:
+                            reward = 0.1  # Base survival bonus
+                        else:
+                            reward = -10.0
                         reward += (score - last_score) * 0.5
                         reward += (coins - last_coins) * 2.0
-                        if dead:
-                            reward -= 10.0
+                            
                         
                         local_buffer.rewards.append(reward)
                         local_buffer.is_terminals.append(dead)

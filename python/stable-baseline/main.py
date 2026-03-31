@@ -15,7 +15,7 @@ class TrainCountCallback(BaseCallback):
 
 def main():
     # Create the environment
-    env = SubwaySurfersEnv(port=8765)
+    env = SubwaySurfersEnv()
     
     # Create the PPO agent
     model = PPO(
