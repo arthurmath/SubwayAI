@@ -51,7 +51,7 @@ async def perform_training(buffer, score):
     mean_reward = sum(buffer.rewards) / len(buffer.rewards) if buffer.rewards else 0
     best_reward_in_buffer = max(buffer.rewards) if buffer.rewards else 0
     
-    print(f"Training PPO (buffer size: {len(buffer.states)})...")
+    print(f"\nTraining PPO (buffer size: {len(buffer.states)})...")
     await agent.train(buffer)
     
     async with history_lock:
@@ -74,7 +74,7 @@ async def perform_training(buffer, score):
 
 async def play_game(websocket):
     global session_best_score, iteration_count, train_count, current_game_id, global_timestep_count
-    print("New connection from game client!")
+    # print("New connection from game client!")
     
     local_buffer = RolloutBuffer()
     last_score = 0
@@ -90,13 +90,13 @@ async def play_game(websocket):
             if msg_type == "init":
                 mode = msg_data.get("mode", "train") # récupère la valeur de la clé "mode" (défaut à "train" si clé absente)
                 game_id = msg_data.get("game_id", -1)
-                print(f"Client initialized in mode: {mode} (game_id: {game_id})")
+                # print(f"Client initialized in mode: {mode}")
                 if mode == "train" and game_id != -1:
                     async with history_lock:
                         if game_id != current_game_id:
                             current_game_id = game_id
                             iteration_count += 1
-                            print(f"NEW GAME ITERATION: {iteration_count}")
+                            print(f"Game iteration: {iteration_count}")
                             
                             # Check if we should train at the start of new iteration
                             if global_timestep_count >= UPDATE_TIMESTEP:
@@ -168,7 +168,7 @@ async def play_game(websocket):
     except websockets.exceptions.ConnectionClosed:
         pass
     finally:
-        print("Client disconnected.")
+        # print("Client disconnected.")
         if mode == "train":
             # Ensure states and rewards stay aligned if disconnected before assigning a reward
             if len(local_buffer.states) > len(local_buffer.rewards):
@@ -192,8 +192,11 @@ async def play_game(websocket):
 async def main():
     port = 8765
     print(f"Starting Python PPO AI Server on ws://127.0.0.1:{port}")
-    async with websockets.serve(play_game, "127.0.0.1", port):
-        await asyncio.Future()  # run forever
+    try:
+        async with websockets.serve(play_game, "127.0.0.1", port):
+            await asyncio.Future()  # run forever
+    except websockets.exceptions.ConnectionClosed:
+        pass
 
 if __name__ == "__main__":
     try:
