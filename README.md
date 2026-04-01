@@ -34,7 +34,7 @@ Le système suit les pièces sur **chacune des trois voies**, en ne considérant
 To Do : 
 
 IA : 
-quand agent joue (pas train), ne pas prendre sample mais max probas actions. meme pendant training, vu qu'il fait beaucoup d'actions par seconde, il finira forcement par toucher 2 fois un mur ou faire une action random qui le fait aller dans un camion sur le coté (il ne reste pas en place).
+quand agent joue (pas train), ne pas prendre sample mais max probas actions. meme pendant training, vu qu'il fait beaucoup d'actions par seconde, il finira forcement par toucher 2 fois un mur ou faire une action random qui le fait aller dans un camion sur le coté (il ne reste pas en place). Faire deux fonction train_action(state, buffer) et inference_action ligne 153 main.py
 actions trop rapides, baisser frequence connexion
 récompense supplémentaire quand obstacle passé
 warm start depuis weights

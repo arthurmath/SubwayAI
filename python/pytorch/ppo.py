@@ -69,18 +69,26 @@ class Agent:
         # Ensure that simultaneous updates from multiple agents don't clash
         self.update_lock = asyncio.Lock()
         
+    
+    def act_play(self, state):
+        with torch.no_grad():
+            state_t = torch.FloatTensor(state).to(device)
+            action_probs = self.policy_old.actor(state_t)
+            action = torch.argmax(action_probs)
 
-    def select_action(self, state, buffer=None):
+        return action.item()
+
+
+    def act_train(self, state, buffer):
         with torch.no_grad():
             state_t = torch.FloatTensor(state).to(device)
             action, action_logprob, state_val = self.policy_old.act(state_t)
-            
-        if buffer is not None:
-            buffer.states.append(state_t)
-            buffer.actions.append(action)
-            buffer.logprobs.append(action_logprob)
-            buffer.state_values.append(state_val)
-        
+
+        buffer.states.append(state_t)
+        buffer.actions.append(action)
+        buffer.logprobs.append(action_logprob)
+        buffer.state_values.append(state_val)
+
         return action.item()
         
 

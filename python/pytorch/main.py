@@ -151,10 +151,9 @@ async def play_game(websocket):
                 state = extract_state(game_state)
                 
                 if mode == "train":
-                    action = agent.select_action(state, local_buffer)
+                    action = agent.act_train(state, local_buffer)
                 else:
-                    # In 'ai player' mode, don't store in buffer
-                    action = agent.select_action(state)
+                    action = agent.act_play(state)
                 
                 response = {
                     "action": ACTIONS[action],
