@@ -129,7 +129,7 @@ class Agent:
             advantages = rewards.detach() - old_state_values.detach()
             
             # Optimize policy for K epochs
-            for epoch in range(self.epochs):
+            for _ in range(self.epochs):
                 logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
                 state_values = torch.squeeze(state_values)
                 if len(state_values.shape) == 0:
@@ -150,8 +150,10 @@ class Agent:
             self.policy_old.load_state_dict(self.policy.state_dict())
             buffer.clear()
 
+
+
     def load_best(self):
-        files = glob.glob(f"{weights_dir}/ppo_score_*.pth")
+        files = glob.glob(f"{weights_dir}/score_*.pth")
         if not files:
             print("No weights found to load.")
             return False
@@ -179,6 +181,6 @@ class Agent:
         
     def save(self, score):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{weights_dir}/ppo_score_{int(score)}_{timestamp}.pth"
+        filename = f"{weights_dir}/score_{int(score)}_{timestamp}.pth"
         torch.save(self.policy.state_dict(), filename)
         print(f"Saved weights to {filename}")

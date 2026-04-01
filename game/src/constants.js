@@ -18,6 +18,8 @@ const HIT_Z_EXIT = 1.85;
 
 const AI_PLAYERS = 20;
 const AI_ACTION_COOLDOWN_MS = 250; // ms between two AI decisions (~4 actions/sec)
+// Si les agents meurent encore trop vite, tu peux monter à 300-350ms. 
+// Si tu veux qu'ils réagissent plus vite (par exemple en mode ai player), tu peux baisser à 200ms.
 
 const CAMERA_POS = { x: 0, y: 3.6, z: 5.8 };
 const CAMERA_LOOK_AT = { x: 0, y: 0.8, z: -10 };

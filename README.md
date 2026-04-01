@@ -3,19 +3,14 @@
 ## Setup 
 
 Play game : 
-
-Open index.html file in your browser:
-file:///Users/arthurmathorel/Documents/Github/SubwayAI/game/index.html
+Open index.html file in your browser
 
 Train/use AI:
 python3 python/pytorch/main.py
 
 
 
-
-
-
-## AI System
+## AI Agent
 
 The AI is trained using **Proximal Policy Optimization (PPO)**, a reinforcement learning algorithm. At each game step, the game sends its current state to a Python server over a WebSocket. The AI picks an action, which is sent back to the game, and the game transitions to a new state. The AI is then given a reward reflecting how well it performed.
 
@@ -45,7 +40,7 @@ The state fed to the neural network is a vector of **16 normalized values** $s \
 - **Sliding**: Whether the player is currently sliding (0.0 or 1.0).
 - **Speed**: Current game speed, normalized by 10.0.
 
-#### 2. Obstacles (Lanes 1, 2, 3)
+#### 2. Obstacles 
 For each of the 3 lanes, two values describe the next upcoming obstacle:
 - **LX_Z**: Distance of the obstacle from the player. Closer to 0.0 means it is approaching fast. Defaults to 1.0 if no obstacle is visible.
 - **LX_T**: Obstacle type, encoding how to avoid it:
@@ -54,9 +49,9 @@ For each of the 3 lanes, two values describe the next upcoming obstacle:
     - `0.5`: **High fence** — must slide under.
     - `1.0`: **Train** — must switch lanes or jump on top.
 
-#### 3. Coins (Lanes 1, 2, 3)
+#### 3. Coins 
 For each lane, the system tracks coins located **before** the next obstacle on that lane:
-- **CX_Z**: Distance to the nearest coin before the obstacle. Normalized by 50.0. Defaults to 1.0 if none are visible.
+- **CX_Z**: Distance to the nearest coin before the obstacle. Defaults to 1.0 if none are visible.
 - **CX_N**: Number of coins available before the next obstacle on this lane.
 
 ---
@@ -71,7 +66,7 @@ Input (16)  →  Linear(64)  →  Tanh  →  Linear(64)  →  Tanh  →  Output
 
 ---
 
-### Actor-Critic: Two Networks, Two Roles
+### Actor-Critic system
 
 The Actor-Critic architecture uses **two separate neural networks** that work together.
 
@@ -174,7 +169,7 @@ Once enough gameplay has been collected (every 2000 timesteps), the same batch o
 2. **Compute the probability ratio** between the new and old policy:
 
 $$
-r(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_\text{old}}(a_t \mid s_t)} = \exp\!\left(\log\pi_\theta(a_t \mid s_t) - \log\pi_{\theta_\text{old}}(a_t \mid s_t)\right)
+r(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_\text{old}}(a_t \mid s_t)} = \exp\left(\log\pi_\theta(a_t \mid s_t) - \log\pi_{\theta_\text{old}}(a_t \mid s_t)\right)
 $$
 
 A ratio $r(\theta) > 1$ means the new policy assigns *higher* probability to that action than the old one; $r(\theta) < 1$ means it assigns lower probability.
@@ -194,7 +189,7 @@ The total loss has three terms:
 **1. Clipped policy loss** — $-\min(\text{surr1},\ \text{surr2})$
 
 $$
-\mathcal{L}^\text{CLIP}(\theta) = -\mathbb{E}_t\!\left[\min\!\left(r(\theta)\,A_t,\ \text{clip}(r(\theta),\, 1-\varepsilon,\, 1+\varepsilon)\,A_t\right)\right]
+\mathcal{L}^\text{CLIP}(\theta) = -\mathbb{E}_t[\min(r(\theta)A_t,\ \text{clip}(r(\theta), 1-\varepsilon, 1+\varepsilon)A_t)]
 $$
 
 - `surr1` is the unclipped objective: the ratio multiplied by the advantage.
@@ -202,14 +197,14 @@ $$
 - Taking the **minimum** of the two ensures the update is never too large: if the ratio strays too far from 1 (meaning the policy has changed too much), the clipped version kicks in and limits the gradient. This is the core of PPO.
 - The **negative sign** turns this into a minimization problem (standard for gradient descent optimizers).
 
-**2. Critic loss** — $0.5 \times \text{MSE}(V_\phi(s_t),\ R_t)$
+**2. Critic loss** — $0.5 \cdot \text{MSE}(V_\phi(s_t),\ R_t)$
 
 The Critic is trained to minimize the mean squared error between its predicted state value and the actual discounted return. The coefficient 0.5 scales its contribution relative to the policy loss.
 
-**3. Entropy bonus** — -0.01 \times H(\pi_\theta(\cdot \mid s_t))$
+**3. Entropy bonus** — $-0.01 \times H(\pi_\theta(\cdot \mid s_t))$
 
 $$
-H(\pi) = -\sum_a \pi(a \mid s)\,\log\pi(a \mid s)
+H(\pi) = -\sum_a \pi(a \mid s)\log\pi(a \mid s)
 $$
 
 Entropy measures how spread out the action probability distribution is. Subtracting it from the loss (i.e., *maximizing* entropy) encourages the policy to remain exploratory and avoid prematurely collapsing onto a single action. The small coefficient (0.01) keeps this effect gentle.
