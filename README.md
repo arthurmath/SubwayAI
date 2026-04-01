@@ -37,10 +37,10 @@ The agent can choose from **5 discrete actions** at each step:
 
 ### State Space
 
-The state fed to the neural network is a vector of **16 normalized values** $ s \in \mathbb{R}^{16} $ coming from the game.
+The state fed to the neural network is a vector of **16 normalized values** $s \in \mathbb{R}^{16}$ coming from the game.
 
 #### 1. Player Parameters
-- **Lane**: Current horizontal position $ \in \{-1.0, 0.0, 1.0\} $ (left, center, right).
+- **Lane**: Current horizontal position $\in \{-1.0, 0.0, 1.0\}$ (left, center, right).
 - **Y**: Current player height, normalized by 3.0.
 - **Sliding**: Whether the player is currently sliding (0.0 or 1.0).
 - **Speed**: Current game speed, normalized by 10.0.
@@ -63,7 +63,7 @@ For each lane, the system tracks coins located **before** the next obstacle on t
 
 ### Neural Network Architecture
 
-Both the Actor and the Critic share the same architecture: two fully-connected hidden layers of 64 neurons with Tanh activations. The input is always the 16-dimensional state vector $ s $.
+Both the Actor and the Critic share the same architecture: two fully-connected hidden layers of 64 neurons with Tanh activations. The input is always the 16-dimensional state vector $s$.
 
 ```
 Input (16)  →  Linear(64)  →  Tanh  →  Linear(64)  →  Tanh  →  Output
@@ -77,7 +77,7 @@ The Actor-Critic architecture uses **two separate neural networks** that work to
 
 #### The Actor — "What should I do?"
 
-The Actor takes the current state $ s $ and outputs a **probability distribution over the 5 possible actions**:
+The Actor takes the current state $s$ and outputs a **probability distribution over the 5 possible actions**:
 
 $$
 \pi_\theta(a \mid s) = \text{Softmax}(W_3 \cdot \tanh(W_2 \cdot \tanh(W_1 \cdot s)))
@@ -87,23 +87,23 @@ It outputs **5 values** (one per action) that sum to 1. An action is then **samp
 
 #### The Critic — "How good is this situation?"
 
-The Critic also takes the state $ s $, but outputs a **single scalar**: the estimated value $ V(s) $ of being in that state.
+The Critic also takes the state $s$, but outputs a **single scalar**: the estimated value $V(s)$ of being in that state.
 
 $$
 V_\phi(s) \in \mathbb{R}
 $$
 
-This value represents the expected total future reward from state $ s $. It answers the question: *"On average, how much reward can I expect to collect from here onwards?"*
+This value represents the expected total future reward from state $s$. It answers the question: *"On average, how much reward can I expect to collect from here onwards?"*
 
 #### Why Two Networks?
 
-The Critic exists to **guide the Actor's learning**. Without it, the Actor would only know whether an episode was good or bad overall — it would have no sense of which specific actions within the episode were responsible. The Critic provides a **baseline**: the advantage $ A(s, a) $ measures whether an action was better or worse than what was expected:
+The Critic exists to **guide the Actor's learning**. Without it, the Actor would only know whether an episode was good or bad overall — it would have no sense of which specific actions within the episode were responsible. The Critic provides a **baseline**: the advantage $A(s, a)$ measures whether an action was better or worse than what was expected:
 
 $$
 A(s, a) = R - V_\phi(s)
 $$
 
-where $ R $ is the actual discounted return collected. If the advantage is positive, the action was better than expected and the Actor should do it more. If it is negative, the Actor should do it less.
+where $R$ is the actual discounted return collected. If the advantage is positive, the action was better than expected and the Actor should do it more. If it is negative, the Actor should do it less.
 
 #### Why Different Learning Rates?
 
@@ -139,7 +139,7 @@ self.policy_old.load_state_dict(self.policy.state_dict())
 
 #### Discounted Return
 
-After each episode, a **discounted return** $ R_t $ is computed for every timestep $ t $. Rather than just using the immediate reward, the agent also cares about future rewards — but discounts them by a factor $ \gamma < 1 $ for each step into the future:
+After each episode, a **discounted return** $R_t$ is computed for every timestep $t$. Rather than just using the immediate reward, the agent also cares about future rewards — but discounts them by a factor $\gamma<1$ for each step into the future:
 
 $$
 R_t = r_t + \gamma r_{t+1} + \gamma^2 r_{t+2} + \cdots = \sum_{k=0}^{\infty} \gamma^k r_{t+k}
@@ -151,20 +151,20 @@ In code, this is computed backwards through the buffer (`gamma = 0.99`):
 discounted_reward = reward + gamma * discounted_reward
 ```
 
-A reward received 100 steps from now is worth $ 0.99^{100} \approx 0.37 $ times a reward received now. This encourages the agent to prefer actions that lead to *sustained* success rather than short-term gains. The returns are then **normalized** (zero mean, unit variance) to stabilize training.
+A reward received 100 steps from now is worth $0.99^{100} \approx 0.37$ times a reward received now. This encourages the agent to prefer actions that lead to *sustained* success rather than short-term gains. The returns are then **normalized** (zero mean, unit variance) to stabilize training.
 
 #### Advantages
 
-The **advantage** $ A_t $ measures how much better (or worse) a taken action turned out to be compared to what the Critic expected:
+The **advantage** $A_t$ measures how much better (or worse) a taken action turned out to be compared to what the Critic expected:
 
 $$
 A_t = R_t - V_\phi(s_t)
 $$
 
-- If $ A_t > 0 $: the action led to *more* reward than expected — the Actor should do it more often.
-- If $ A_t < 0 $: the action led to *less* reward than expected — the Actor should do it less often.
+- If $A_t > 0$: the action led to *more* reward than expected — the Actor should do it more often.
+- If $A_t < 0$: the action led to *less* reward than expected — the Actor should do it less often.
 
-The Critic's estimate $ V_\phi(s_t) $ acts as a **baseline**, reducing the variance of the gradient signal and making learning much more efficient than using raw returns alone.
+The Critic's estimate $V_\phi(s_t)$ acts as a **baseline**, reducing the variance of the gradient signal and making learning much more efficient than using raw returns alone.
 
 #### Training Loop (K Epochs)
 
@@ -177,7 +177,7 @@ $$
 r(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_\text{old}}(a_t \mid s_t)} = \exp\!\left(\log\pi_\theta(a_t \mid s_t) - \log\pi_{\theta_\text{old}}(a_t \mid s_t)\right)
 $$
 
-A ratio $ r(\theta) > 1 $ means the new policy assigns *higher* probability to that action than the old one; $ r(\theta) < 1 $ means it assigns lower probability.
+A ratio $r(\theta) > 1$ means the new policy assigns *higher* probability to that action than the old one; $r(\theta) < 1$ means it assigns lower probability.
 
 3. **Compute the clipped surrogate loss** (see below) and backpropagate.
 
@@ -191,7 +191,7 @@ loss = -torch.min(surr1, surr2) + 0.5 * self.loss(state_values, rewards) - 0.01 
 
 The total loss has three terms:
 
-**1. Clipped policy loss** — $ -\min(\text{surr1},\ \text{surr2}) $
+**1. Clipped policy loss** — $-\min(\text{surr1},\ \text{surr2})$
 
 $$
 \mathcal{L}^\text{CLIP}(\theta) = -\mathbb{E}_t\!\left[\min\!\left(r(\theta)\,A_t,\ \text{clip}(r(\theta),\, 1-\varepsilon,\, 1+\varepsilon)\,A_t\right)\right]
@@ -202,11 +202,11 @@ $$
 - Taking the **minimum** of the two ensures the update is never too large: if the ratio strays too far from 1 (meaning the policy has changed too much), the clipped version kicks in and limits the gradient. This is the core of PPO.
 - The **negative sign** turns this into a minimization problem (standard for gradient descent optimizers).
 
-**2. Critic loss** — $ 0.5 \times \text{MSE}(V_\phi(s_t),\ R_t) $
+**2. Critic loss** — $0.5 \times \text{MSE}(V_\phi(s_t),\ R_t)$
 
 The Critic is trained to minimize the mean squared error between its predicted state value and the actual discounted return. The coefficient 0.5 scales its contribution relative to the policy loss.
 
-**3. Entropy bonus** — $ -0.01 \times H(\pi_\theta(\cdot \mid s_t)) $
+**3. Entropy bonus** — -0.01 \times H(\pi_\theta(\cdot \mid s_t))$
 
 $$
 H(\pi) = -\sum_a \pi(a \mid s)\,\log\pi(a \mid s)
