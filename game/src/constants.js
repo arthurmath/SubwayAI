@@ -17,6 +17,7 @@ const HIT_Z_ENTER = -1.85;
 const HIT_Z_EXIT = 1.85;
 
 const AI_PLAYERS = 20;
+const AI_ACTION_COOLDOWN_MS = 250; // ms between two AI decisions (~4 actions/sec)
 
 const CAMERA_POS = { x: 0, y: 3.6, z: 5.8 };
 const CAMERA_LOOK_AT = { x: 0, y: 0.8, z: -10 };

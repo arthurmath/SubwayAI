@@ -1,51 +1,237 @@
+# SubwayAI
+
+## Setup 
+
 Play game : 
 
-Open HTML file in your browser:
+Open index.html file in your browser:
 file:///Users/arthurmathorel/Documents/Github/SubwayAI/game/index.html
 
 Train/use AI:
-python3 main.py
-
-PascalCase is used for files that export a Class or a React Component, while lowercase/camelCase is used for utility files, constants, or entry points.
+python3 python/pytorch/main.py
 
 
 
-## 1. Paramètres du Joueur 
-- **Lane** : Position horizontale actuelle (-1.0: gauche, 0.0: milieu, 1.0: droite).
-- **Y** : Hauteur actuelle du joueur (normalisée par 3.0).
-- **Sliding** : Indique si le joueur est en train de glisser/rouler (0.0 ou 1.0).
-- **Speed** : Vitesse actuelle du jeu (normalisée par 10.0).
-
-## 2. Obstacles 
-- **LX_Z** : Distance de l'obstacle par rapport au joueur. X varie de 1 à 3. Plus la valeur est proche de 0.0, plus l'obstacle est proche. Défaut à 1.0 si aucun obstacle n'est visible. 
-- **LX_T** : Type de l'obstacle pour savoir comment l'esquiver :
-    - `-1.0`: **Rien** (Voie libre).
-    - `0.0` : **Barrière basse** (on peut sauter par-dessus ou glisser dessous).
-    - `0.5` : **Clôture haute** (on doit obligatoirement glisser dessous).
-    - `1.0` : **Train** (doit être évité en changeant de voie ou en sautant dessus).
-
-## 3. Pièces (Lanes 1, 2, 3)
-Le système suit les pièces sur **chacune des trois voies**, en ne considérant que celles situées **avant** le prochain obstacle de la voie :
-- **CX_Z** : Distance de la prochaine pièce (située avant l'obstacle). Défaut à 1.0 si aucune pièce n'est visible avant l'obstacle. Normalisé par 50.0.
-- **CX_N** : Nombre de pièces présentes sur cette voie **avant** d'atteindre le prochain obstacle.
 
 
 
-To Do : 
+## AI System
+
+The AI is trained using **Proximal Policy Optimization (PPO)**, a reinforcement learning algorithm. At each game step, the game sends its current state to a Python server over a WebSocket. The AI picks an action, which is sent back to the game, and the game transitions to a new state. The AI is then given a reward reflecting how well it performed.
+
+---
+
+### Action Space
+
+The agent can choose from **5 discrete actions** at each step:
+
+| Action | Key | Description |
+|--------|-----|-------------|
+| `L` | Move Left | Shift one lane to the left |
+| `R` | Move Right | Shift one lane to the right |
+| `J` | Jump | Jump over a low barrier or onto a train |
+| `S` | Slide | Slide under a high fence |
+| `None` | Do nothing | Stay in the current state |
+
+---
+
+### State Space
+
+The state fed to the neural network is a vector of **16 normalized values** $ s \in \mathbb{R}^{16} $ coming from the game.
+
+#### 1. Player Parameters
+- **Lane**: Current horizontal position $ \in \{-1.0, 0.0, 1.0\} $ (left, center, right).
+- **Y**: Current player height, normalized by 3.0.
+- **Sliding**: Whether the player is currently sliding (0.0 or 1.0).
+- **Speed**: Current game speed, normalized by 10.0.
+
+#### 2. Obstacles (Lanes 1, 2, 3)
+For each of the 3 lanes, two values describe the next upcoming obstacle:
+- **LX_Z**: Distance of the obstacle from the player. Closer to 0.0 means it is approaching fast. Defaults to 1.0 if no obstacle is visible.
+- **LX_T**: Obstacle type, encoding how to avoid it:
+    - `-1.0`: **Nothing** — lane is clear.
+    - `0.0`: **Low barrier** — can be jumped over or slid under.
+    - `0.5`: **High fence** — must slide under.
+    - `1.0`: **Train** — must switch lanes or jump on top.
+
+#### 3. Coins (Lanes 1, 2, 3)
+For each lane, the system tracks coins located **before** the next obstacle on that lane:
+- **CX_Z**: Distance to the nearest coin before the obstacle. Normalized by 50.0. Defaults to 1.0 if none are visible.
+- **CX_N**: Number of coins available before the next obstacle on this lane.
+
+---
+
+### Neural Network Architecture
+
+Both the Actor and the Critic share the same architecture: two fully-connected hidden layers of 64 neurons with Tanh activations. The input is always the 16-dimensional state vector $ s $.
+
+```
+Input (16)  →  Linear(64)  →  Tanh  →  Linear(64)  →  Tanh  →  Output
+```
+
+---
+
+### Actor-Critic: Two Networks, Two Roles
+
+The Actor-Critic architecture uses **two separate neural networks** that work together.
+
+#### The Actor — "What should I do?"
+
+The Actor takes the current state $ s $ and outputs a **probability distribution over the 5 possible actions**:
+
+$$
+\pi_\theta(a \mid s) = \text{Softmax}(W_3 \cdot \tanh(W_2 \cdot \tanh(W_1 \cdot s)))
+$$
+
+It outputs **5 values** (one per action) that sum to 1. An action is then **sampled** from this distribution during training, or the **argmax** is taken during inference. This probabilistic output is essential: if the actor always picked the same action deterministically, it would never explore new strategies.
+
+#### The Critic — "How good is this situation?"
+
+The Critic also takes the state $ s $, but outputs a **single scalar**: the estimated value $ V(s) $ of being in that state.
+
+$$
+V_\phi(s) \in \mathbb{R}
+$$
+
+This value represents the expected total future reward from state $ s $. It answers the question: *"On average, how much reward can I expect to collect from here onwards?"*
+
+#### Why Two Networks?
+
+The Critic exists to **guide the Actor's learning**. Without it, the Actor would only know whether an episode was good or bad overall — it would have no sense of which specific actions within the episode were responsible. The Critic provides a **baseline**: the advantage $ A(s, a) $ measures whether an action was better or worse than what was expected:
+
+$$
+A(s, a) = R - V_\phi(s)
+$$
+
+where $ R $ is the actual discounted return collected. If the advantage is positive, the action was better than expected and the Actor should do it more. If it is negative, the Actor should do it less.
+
+#### Why Different Learning Rates?
+
+```python
+lr_actor  = 0.0003
+lr_critic = 0.001
+```
+
+The Critic is trained with a **higher learning rate** (0.001) because it needs to quickly learn accurate value estimates — it is solving a regression problem with a clear numerical target. If the Critic is slow to converge, the advantage signal used to train the Actor is inaccurate, which destabilizes the whole system.
+
+The Actor is trained more **cautiously** (0.0003) because its updates directly affect the policy that plays the game. Large, aggressive updates could cause the policy to collapse (e.g., always picking the same action). The Actor must improve incrementally to remain stable.
+
+---
+
+### PPO: Proximal Policy Optimization
+
+PPO is an Actor-Critic algorithm. On top of the Actor-Critic foundation, it introduces one key innovation: **it prevents the policy from changing too drastically in a single training update**, which makes training far more stable.
+
+#### Old Policy vs. New Policy
+
+```python
+self.policy     = ActorCritic(state_dim, action_dim)  # the policy being trained
+self.policy_old = ActorCritic(state_dim, action_dim)  # frozen snapshot used to collect data
+```
+
+Two copies of the same network are kept. The **old policy** $\pi_{\theta_\text{old}}$ is a frozen snapshot used to collect gameplay experience — its weights do not change during a training update. The **new policy** $\pi_\theta$ is the one being actively trained.
+
+This separation is fundamental to PPO: to measure how much the policy has shifted, we need to compare the new policy's action probabilities against what they were *when the data was collected*. Without this reference, there would be no way to limit the size of the update. Once training is complete, the old policy is updated to match the new one:
+
+```python
+self.policy_old.load_state_dict(self.policy.state_dict())
+```
+
+#### Discounted Return
+
+After each episode, a **discounted return** $ R_t $ is computed for every timestep $ t $. Rather than just using the immediate reward, the agent also cares about future rewards — but discounts them by a factor $ \gamma < 1 $ for each step into the future:
+
+$$
+R_t = r_t + \gamma r_{t+1} + \gamma^2 r_{t+2} + \cdots = \sum_{k=0}^{\infty} \gamma^k r_{t+k}
+$$
+
+In code, this is computed backwards through the buffer (`gamma = 0.99`):
+
+```python
+discounted_reward = reward + gamma * discounted_reward
+```
+
+A reward received 100 steps from now is worth $ 0.99^{100} \approx 0.37 $ times a reward received now. This encourages the agent to prefer actions that lead to *sustained* success rather than short-term gains. The returns are then **normalized** (zero mean, unit variance) to stabilize training.
+
+#### Advantages
+
+The **advantage** $ A_t $ measures how much better (or worse) a taken action turned out to be compared to what the Critic expected:
+
+$$
+A_t = R_t - V_\phi(s_t)
+$$
+
+- If $ A_t > 0 $: the action led to *more* reward than expected — the Actor should do it more often.
+- If $ A_t < 0 $: the action led to *less* reward than expected — the Actor should do it less often.
+
+The Critic's estimate $ V_\phi(s_t) $ acts as a **baseline**, reducing the variance of the gradient signal and making learning much more efficient than using raw returns alone.
+
+#### Training Loop (K Epochs)
+
+Once enough gameplay has been collected (every 2000 timesteps), the same batch of data is reused for **4 optimization epochs**. At each epoch:
+
+1. **Re-evaluate** the actions from the collected data under the *current* (new) policy to get updated log-probabilities and state values.
+2. **Compute the probability ratio** between the new and old policy:
+
+$$
+r(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_\text{old}}(a_t \mid s_t)} = \exp\!\left(\log\pi_\theta(a_t \mid s_t) - \log\pi_{\theta_\text{old}}(a_t \mid s_t)\right)
+$$
+
+A ratio $ r(\theta) > 1 $ means the new policy assigns *higher* probability to that action than the old one; $ r(\theta) < 1 $ means it assigns lower probability.
+
+3. **Compute the clipped surrogate loss** (see below) and backpropagate.
+
+After all epochs, the old policy weights are overwritten with the new policy weights and the buffer is cleared.
+
+#### Loss Function
+
+```python
+loss = -torch.min(surr1, surr2) + 0.5 * self.loss(state_values, rewards) - 0.01 * dist_entropy
+```
+
+The total loss has three terms:
+
+**1. Clipped policy loss** — $ -\min(\text{surr1},\ \text{surr2}) $
+
+$$
+\mathcal{L}^\text{CLIP}(\theta) = -\mathbb{E}_t\!\left[\min\!\left(r(\theta)\,A_t,\ \text{clip}(r(\theta),\, 1-\varepsilon,\, 1+\varepsilon)\,A_t\right)\right]
+$$
+
+- `surr1` is the unclipped objective: the ratio multiplied by the advantage.
+- `surr2` clips the ratio to stay within $[1-\varepsilon,\ 1+\varepsilon]$ (here $\varepsilon = 0.2$, so between 0.8 and 1.2), then multiplies by the advantage.
+- Taking the **minimum** of the two ensures the update is never too large: if the ratio strays too far from 1 (meaning the policy has changed too much), the clipped version kicks in and limits the gradient. This is the core of PPO.
+- The **negative sign** turns this into a minimization problem (standard for gradient descent optimizers).
+
+**2. Critic loss** — $ 0.5 \times \text{MSE}(V_\phi(s_t),\ R_t) $
+
+The Critic is trained to minimize the mean squared error between its predicted state value and the actual discounted return. The coefficient 0.5 scales its contribution relative to the policy loss.
+
+**3. Entropy bonus** — $ -0.01 \times H(\pi_\theta(\cdot \mid s_t)) $
+
+$$
+H(\pi) = -\sum_a \pi(a \mid s)\,\log\pi(a \mid s)
+$$
+
+Entropy measures how spread out the action probability distribution is. Subtracting it from the loss (i.e., *maximizing* entropy) encourages the policy to remain exploratory and avoid prematurely collapsing onto a single action. The small coefficient (0.01) keeps this effect gentle.
+
+
+
+
+
+
+
+
+
+
+## To Do : 
 
 IA : 
-quand agent joue (pas train), ne pas prendre sample mais max probas actions. meme pendant training, vu qu'il fait beaucoup d'actions par seconde, il finira forcement par toucher 2 fois un mur ou faire une action random qui le fait aller dans un camion sur le coté (il ne reste pas en place). Faire deux fonction train_action(state, buffer) et inference_action ligne 153 main.py
-actions trop rapides, baisser frequence connexion
 récompense supplémentaire quand obstacle passé
 warm start depuis weights
-
-
 
 Front : 
 longueur des sauts de pièces doivent etre plus longs quand vitesse augmente (nb pièces aussi)
 bouger un peu la caméra quand on change de line (pas mode IA multiples)
-
-
 
 
 
@@ -59,3 +245,5 @@ async def send_save():
         await ws.send(json.dumps({'type': 'save'}))
 asyncio.run(send_save())
 "
+
+PascalCase is used for files that export a Class or a React Component, while lowercase/camelCase is used for utility files, constants, or entry points.

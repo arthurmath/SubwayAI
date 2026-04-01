@@ -68,6 +68,7 @@ class AIController extends Controller {
         this.gameId = gameId;
         this.waitingForAction = false;
         this.initialized = false;
+        this.lastActionTime = 0;
 
         const connect = () => {
             this.socket = new WebSocket('ws://127.0.0.1:8765');
@@ -110,9 +111,13 @@ class AIController extends Controller {
     // This method can be called by the RL agent to decide on actions
     update(gameState) {
         if (!this.initialized || !this.socket) return;
-        if (!this.waitingForAction && this.socket.readyState === WebSocket.OPEN) {
+        const now = Date.now();
+        if (!this.waitingForAction
+            && this.socket.readyState === WebSocket.OPEN
+            && now - this.lastActionTime >= AI_ACTION_COOLDOWN_MS) {
             this.socket.send(JSON.stringify({ type: 'state', data: gameState }));
             this.waitingForAction = true;
+            this.lastActionTime = now;
         }
     }
 
