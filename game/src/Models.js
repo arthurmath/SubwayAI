@@ -20,7 +20,7 @@ function createBox(w, h, d, color, options = {}) {
 }
 
 // Player Arm Builder
-function addArm(group, xPos, sleeveCol, skinCol) {
+function addArm(group, xPos, sleeveCol) {
     const ag = new THREE.Group();
     ag.position.set(xPos, 1.05, 0);
     const up = createBox(0.18, 0.32, 0.18, sleeveCol);
@@ -29,9 +29,6 @@ function addArm(group, xPos, sleeveCol, skinCol) {
     const lw = createBox(0.16, 0.26, 0.16, sleeveCol);
     lw.position.set(0, -0.40, 0);
     ag.add(lw);
-    const hd = createBox(0.14, 0.14, 0.14, skinCol);
-    hd.position.set(0, -0.58, 0);
-    ag.add(hd);
     group.add(ag);
     return ag;
 }
@@ -40,8 +37,8 @@ function addArm(group, xPos, sleeveCol, skinCol) {
 function addLeg(group, xPos, pantsCol) {
     const lg = new THREE.Group();
     lg.position.set(xPos, 0.60, 0);
-    const m = createBox(0.23, 0.46, 0.24, pantsCol);
-    m.position.set(0, -0.23, 0);
+    const m = createBox(0.23, 0.68, 0.24, pantsCol);
+    m.position.set(0, -0.24, 0);
     lg.add(m);
     group.add(lg);
     return lg;
@@ -83,36 +80,27 @@ function buildJake() {
     group.rotation.y = Math.PI; // Face away from camera
     const SCALE = 0.95; // Make character smaller
 
-    const SK = 0xfce1c5, HO = 0xffffff, VS = 0x1a3a6a, SH = 0xcc2222, JN = 0x1a3a6a;
+    const SK = 0xfce1c5; // Skin color
+    const HO = 0xffffff; // Hoodie (white)
+    const VS = 0x1a3a6a; // Vest (blue)
+    const SH = 0xcc2222; // Shirt / Cap details (red)
+    const JN = 0x1a3a6a; // Jeans / Pants (blue)
     const torso = createBox(0.56 * SCALE, 0.62 * SCALE, 0.36 * SCALE, VS);
     torso.position.set(0, 0.87 * SCALE, 0);
     group.add(torso);
 
     // Blue Vest Panels (over white hoodie)
-    const vf = createBox(0.58 * SCALE, 0.55 * SCALE, 0.06 * SCALE, VS);
+    const vf = createBox(0.50 * SCALE, 0.55 * SCALE, 0.06 * SCALE, VS);
     vf.position.set(0, 0.90 * SCALE, 0.19 * SCALE);
     group.add(vf);
 
     const vl = createBox(0.07 * SCALE, 0.55 * SCALE, 0.32 * SCALE, VS);
-    vl.position.set(-0.30 * SCALE, 0.90 * SCALE, 0);
+    vl.position.set(-0.2 * SCALE, 0.90 * SCALE, 0);
     group.add(vl);
 
     const vr = createBox(0.07 * SCALE, 0.55 * SCALE, 0.32 * SCALE, VS);
-    vr.position.set(0.30 * SCALE, 0.90 * SCALE, 0);
+    vr.position.set(0.2 * SCALE, 0.90 * SCALE, 0);
     group.add(vr);
-
-    // Red Undershirt detail
-    const col = createBox(0.32 * SCALE, 0.09 * SCALE, 0.30 * SCALE, SH);
-    col.position.set(0, 1.17 * SCALE, 0.04 * SCALE);
-    group.add(col);
-
-    const nk = createBox(0.19 * SCALE, 0.14 * SCALE, 0.20 * SCALE, SK);
-    nk.position.set(0, 1.21 * SCALE, 0);
-    group.add(nk);
-
-    const head = createBox(0.42 * SCALE, 0.38 * SCALE, 0.40 * SCALE, SK);
-    head.position.set(0, 1.44 * SCALE, 0);
-    group.add(head);
 
     // addFace(group, SK, 1.48 * SCALE);
 
@@ -123,7 +111,7 @@ function buildJake() {
     group.add(hatBase);
 
     // Red Front Panel of Cap
-    const capFront = createBox(0.46 * SCALE, 0.18 * SCALE, 0.08 * SCALE, SH);
+    const capFront = createBox(0.47 * SCALE, 0.18 * SCALE, 0.10 * SCALE, SH);
     capFront.position.set(0, 1.66 * SCALE, 0.18 * SCALE);
     group.add(capFront);
 
@@ -132,8 +120,10 @@ function buildJake() {
     brim.position.set(0, 1.55 * SCALE, 0.34 * SCALE);
     group.add(brim);
 
-    const laG = addArm(group, -0.37 * SCALE, HO, SK);
-    const raG = addArm(group, 0.37 * SCALE, HO, SK);
+    const laG = addArm(group, -0.37 * SCALE, HO);
+    const raG = addArm(group, 0.37 * SCALE, HO);
+    laG.position.y = 1.18 * SCALE;
+    raG.position.y = 1.18 * SCALE;
     const llG = addLeg(group, -0.14 * SCALE, JN);
     const rlG = addLeg(group, 0.14 * SCALE, JN);
     const lShoeG = addShoe(llG, 0, 0x228822, null, 0x222222);

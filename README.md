@@ -226,7 +226,6 @@ mean score ne change pas à chaque itération bizarre
 afficher reward dans human mode
 
 Front : 
-longueur des sauts de pièces doivent etre plus longs quand vitesse augmente (nb pièces aussi)
 ca n'accélère plus ?
 
 

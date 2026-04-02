@@ -134,9 +134,9 @@ class Game {
             const seq = [0, 1, 2, 1, 0, 1, 2];
             for (let i = 0; i < seq.length; i++) this.activateCoin(seq[i], z - i * 1.0, 0.52);
         } else { // Generic arc or other
-            for (let i = 0; i < 5; i++) {
-                const y = 0.55 + Math.sin((i / 4) * Math.PI) * 2.1;
-                this.activateCoin(lane, z - i * 0.9, y);
+            for (let i = 0; i < 7; i++) {
+                const y = 0.55 + Math.sin((i / 6) * Math.PI) * 2.1;
+                this.activateCoin(lane, z - i * 1.4, y);
             }
         }
     }

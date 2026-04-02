@@ -199,7 +199,7 @@ class Player {
         const speed = BASE_SPEED * speedMultiplier;
         this.animT += dt * (speed / BASE_SPEED) * 1.65;
         const t = this.animT;
-        const rf = 8.2; // Running frequency (faster)
+        const rf = 15; // Running frequency (faster)
         const ra = 0.58; // Running amplitude (more amplitude)
 
         if (this.rolling) {
