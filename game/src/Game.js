@@ -261,7 +261,7 @@ class Game {
                 if (this.statIterationEl) this.statIterationEl.textContent = stats.iteration;
                 if (this.statTrainCountEl) this.statTrainCountEl.textContent = stats.trainCount;
                 if (this.statBestDistEl) this.statBestDistEl.textContent = Math.floor(stats.bestScore) + 'm';
-                if (this.statAvgScoreEl) this.statAvgScoreEl.textContent = Math.floor(stats.avgScore) + 'm';
+                if (this.statAvgScoreEl) this.statAvgScoreEl.textContent = stats.avgScore.toFixed(1) + 'm';
             }
         }
 

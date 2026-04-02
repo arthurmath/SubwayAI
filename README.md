@@ -2,10 +2,10 @@
 
 ## Setup 
 
-Play game : 
-Open index.html file in your browser
+### Play game : 
+Open game/index.html file in your browser
 
-Train/use AI:
+### Train/use AI:
 python3 python/pytorch/main.py
 
 
@@ -221,14 +221,11 @@ Entropy measures how spread out the action probability distribution is. Subtract
 ## To Do : 
 
 IA : 
-mettre le mean score avec une virgule
-warm start depuis weights
-accelerer l'entrainnementa
-ugmenter le fréquence des training
+accelerer l'entrainement (augmenter nb agents?)
+mean score ne change pas à chaque itération bizarre
 
 Front : 
 longueur des sauts de pièces doivent etre plus longs quand vitesse augmente (nb pièces aussi)
-bouger un peu la caméra quand on change de line (pas mode IA multiples)
 
 
 
@@ -242,5 +239,3 @@ async def send_save():
         await ws.send(json.dumps({'type': 'save'}))
 asyncio.run(send_save())
 "
-
-PascalCase is used for files that export a Class or a React Component, while lowercase/camelCase is used for utility files, constants, or entry points.

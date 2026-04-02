@@ -3,7 +3,9 @@ import asyncio
 import websockets
 import logging
 from ppo import Agent
-from utils import RolloutBuffer, extract_state, save_plots, load_best, save_weights
+import glob, os
+import torch
+from utils import RolloutBuffer, extract_state, save_plots, load_best, save_weights, weights_dir, device
 
 
 # Configure logging to suppress noisy websocket handshake errors
@@ -11,7 +13,7 @@ logging.getLogger('websockets').setLevel(logging.ERROR)
 
 # Left, Right, Jump, Slide, Nothing
 ACTIONS = ['L', 'R', 'J', 'S', None]
-UPDATE_TIMESTEP = 2000
+UPDATE_TIMESTEP = 1000
 
 
 agent = Agent(
@@ -32,6 +34,7 @@ global_buffer = RolloutBuffer()
 global_timestep_count = 0
 mean_reward = 0
 last_mean_score = 0
+ready_for_new_session = True  # True when server just started or after a training stop
 
 
 # History tracking
@@ -74,7 +77,7 @@ async def perform_training(buffer, score):
 
 
 async def play_game(websocket):
-    global session_best_score, iteration_count, train_count, current_game_id, global_timestep_count
+    global session_best_score, iteration_count, train_count, current_game_id, global_timestep_count, ready_for_new_session
     
     local_buffer = RolloutBuffer()
     last_score = 0
@@ -88,11 +91,12 @@ async def play_game(websocket):
             msg_type = msg_data.get("type")
             
             if msg_type == "init":
-                mode = msg_data.get("mode", "train") # récupère la valeur de la clé "mode" (défaut à "train" si clé absente)
+                mode = msg_data.get("mode", "train")
                 game_id = msg_data.get("game_id", -1)
-                # print(f"Client initialized in mode: {mode}")
+                warm_start = msg_data.get("warm_start", False)
                 if mode == "train" and game_id != -1:
                     should_train = False
+                    do_warm_start = False
                     async with history_lock:
                         if game_id != current_game_id:
                             current_game_id = game_id
@@ -100,16 +104,71 @@ async def play_game(websocket):
                             print(f"Game iteration: {iteration_count}")
                             if global_timestep_count >= UPDATE_TIMESTEP:
                                 should_train = True
+                            if warm_start and ready_for_new_session:
+                                do_warm_start = True
+                                ready_for_new_session = False
                     if should_train:
                         await perform_training(global_buffer, session_best_score)
+                    if do_warm_start:
+                        weights_file = msg_data.get("weights_file")
+                        if weights_file:
+                            path = os.path.join(weights_dir, weights_file)
+                            state_dict = torch.load(path, map_location=device, weights_only=True)
+                            agent.policy.load_state_dict(state_dict)
+                            agent.policy_old.load_state_dict(state_dict)
+                            print(f"Warm start with: {weights_file}")
+                        else:
+                            load_best(agent.policy, agent.policy_old)
                 if mode == "ai":
-                    load_best(agent.policy, agent.policy_old)
+                    weights_file = msg_data.get("weights_file")
+                    if weights_file:
+                        path = os.path.join(weights_dir, weights_file)
+                        state_dict = torch.load(path, map_location=device, weights_only=True)
+                        agent.policy.load_state_dict(state_dict)
+                        agent.policy_old.load_state_dict(state_dict)
+                        print(f"Loaded weights: {weights_file}")
+                    else:
+                        load_best(agent.policy, agent.policy_old)
                 continue
                 
+            elif msg_type == "query_weights_list":
+                files = glob.glob(f"{weights_dir}/score_*.pth")
+                entries = []
+                for f in files:
+                    try:
+                        base = os.path.basename(f)
+                        parts = base.split("_")
+                        score = int(parts[1])
+                        raw_date = parts[2]  # YYYYMMDD
+                        date_fmt = f"{raw_date[6:8]}/{raw_date[4:6]}/{raw_date[0:4]}"
+                        entries.append({"filename": base, "score": score, "date": date_fmt})
+                    except Exception:
+                        pass
+                entries.sort(key=lambda e: e["score"], reverse=True)
+                await websocket.send(json.dumps({"weights": entries}))
+                continue
+
+            elif msg_type == "query_best_weights":
+                files = glob.glob(f"{weights_dir}/score_*.pth")
+                best_file = None
+                best_score = -1
+                for f in files:
+                    try:
+                        base = os.path.basename(f)
+                        score = float(base.split("_")[1])
+                        if score > best_score:
+                            best_score = score
+                            best_file = base
+                    except Exception:
+                        pass
+                await websocket.send(json.dumps({ "filename": best_file or "" }))
+                continue
+
             elif msg_type == "save":
-                print(f"Training stopped. Saving weights and plots.")
+                print(f"\nTraining stopped. Saving weights and plots.")
                 save_weights(agent.policy, session_best_score)
                 save_plots(scores_history, rewards_history)
+                ready_for_new_session = True
                 continue
                 
             elif msg_type == "state":
@@ -190,7 +249,7 @@ async def play_game(websocket):
 
 async def main():
     port = 8765
-    print(f"Starting Python PPO AI Server on ws://127.0.0.1:{port}")
+    print(f"Starting Python AI Server on ws://127.0.0.1:{port}")
     try:
         async with websockets.serve(play_game, "127.0.0.1", port):
             await asyncio.Future()  # run forever

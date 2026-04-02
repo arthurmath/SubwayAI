@@ -62,10 +62,12 @@ class HumanController extends Controller {
 
 
 class AIController extends Controller {
-    constructor(mode = 'ai', gameId = 0, connectionDelay = 0) {
+    constructor(mode = 'ai', gameId = 0, connectionDelay = 0, warmStart = false, weightsFile = null) {
         super();
         this.mode = mode;
         this.gameId = gameId;
+        this.warmStart = warmStart;
+        this.weightsFile = weightsFile;
         this.waitingForAction = false;
         this.initialized = false;
         this.lastActionTime = 0;
@@ -74,8 +76,8 @@ class AIController extends Controller {
             this.socket = new WebSocket('ws://127.0.0.1:8765');
             
             this.socket.onopen = () => {
-                console.log('Connected to AI Server in ' + this.mode + ' mode');
-                this.socket.send(JSON.stringify({ type: 'init', mode: this.mode, game_id: this.gameId }));
+                console.log('Connected to AI Server in ' + this.mode + ' mode' + (this.warmStart ? ' (warm start)' : ''));
+                this.socket.send(JSON.stringify({ type: 'init', mode: this.mode, game_id: this.gameId, warm_start: this.warmStart, weights_file: this.weightsFile }));
                 this.initialized = true;
             };
 

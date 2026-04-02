@@ -145,7 +145,7 @@ def load_best(policy, policy_old):
             pass
 
     if best_file:
-        print(f"Loading best weights: {best_file} (Score: {best_score})")
+        print(f"Loading best weights: {best_file}")
         state_dict = torch.load(best_file, map_location=device, weights_only=True)
         policy.load_state_dict(state_dict)
         policy_old.load_state_dict(state_dict)
