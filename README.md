@@ -223,10 +223,11 @@ Entropy measures how spread out the action probability distribution is. Subtract
 IA : 
 accelerer l'entrainement (augmenter nb agents?)
 mean score ne change pas à chaque itération bizarre
+afficher reward dans human mode
 
 Front : 
 longueur des sauts de pièces doivent etre plus longs quand vitesse augmente (nb pièces aussi)
-
+ca n'accélère plus ?
 
 
 
