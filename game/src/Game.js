@@ -51,6 +51,10 @@ class Game {
         this.statAvgScoreEl = document.getElementById('stat-avg-score');
         this.pauseOverlay = document.getElementById('pause-overlay');
         this.paramValueEls = {};
+        this.humanRewardEl = null;
+        this.lastHumanScore = 0;
+        this.lastHumanCoins = 0;
+        this.totalHumanReward = 0;
     }
 
     addPlayer(controller, id) {
@@ -76,6 +80,9 @@ class Game {
         this.speedMultiplier = 1.0;
         this.lastSpeedUpScore = 0;
         this.time = 0;
+        this.lastHumanScore = 0;
+        this.lastHumanCoins = 0;
+        this.totalHumanReward = 0;
         
         if (this.mode === 'train' && this.aliveCountEl) {
             this.aliveCountEl.classList.remove('hidden');
@@ -202,6 +209,15 @@ class Game {
                     ...gameState
                 });
                 this.updateParamsDisplay(aiState);
+
+                const scoreDelta = humanPlayer.score - this.lastHumanScore;
+                const coinsDelta = humanPlayer.coins - this.lastHumanCoins;
+                this.totalHumanReward += scoreDelta * 5.0 + coinsDelta * 0.5;
+                this.lastHumanScore = humanPlayer.score;
+                this.lastHumanCoins = humanPlayer.coins;
+                if (this.humanRewardEl) {
+                    this.humanRewardEl.textContent = this.totalHumanReward.toFixed(1);
+                }
             }
         } else if (this.paramsContainer) {
             this.paramsContainer.classList.add('hidden');
@@ -497,6 +513,19 @@ class Game {
                 });
                 this.paramsContainer.appendChild(row);
             });
+
+            const rewardRow = document.createElement('div');
+            rewardRow.className = 'param-reward-row';
+            const rewardLabel = document.createElement('div');
+            rewardLabel.className = 'param-reward-label';
+            rewardLabel.textContent = 'REWARD';
+            const rewardVal = document.createElement('div');
+            rewardVal.className = 'param-reward-value';
+            rewardVal.textContent = '0.0';
+            this.humanRewardEl = rewardVal;
+            rewardRow.appendChild(rewardLabel);
+            rewardRow.appendChild(rewardVal);
+            this.paramsContainer.appendChild(rewardRow);
         }
         
         // Update values

@@ -226,6 +226,8 @@ mean score ne change pas à chaque itération bizarre
 afficher reward dans human mode
 
 Front : 
+jambes trop longues dépassent sous les pieds
+il n'y a plus de coup
 ca n'accélère plus ?
 
 

@@ -37,8 +37,8 @@ function addArm(group, xPos, sleeveCol) {
 function addLeg(group, xPos, pantsCol) {
     const lg = new THREE.Group();
     lg.position.set(xPos, 0.60, 0);
-    const m = createBox(0.23, 0.68, 0.24, pantsCol);
-    m.position.set(0, -0.24, 0);
+    const m = createBox(0.23, 0.65, 0.24, pantsCol);
+    m.position.set(0, -0.14, 0.1);
     lg.add(m);
     group.add(lg);
     return lg;
@@ -57,7 +57,7 @@ function addShoe(group, xPos, baseCol, accentCol, soleCol) {
     const sl = createBox(0.26, 0.04, 0.35, soleCol || 0x222222);
     sl.position.y = -0.08;
     sg.add(sl);
-    sg.position.set(xPos, 0.07, 0.05);
+    sg.position.set(xPos, 0.07, 0.15);
     group.add(sg);
     return sg;
 }
@@ -110,6 +110,14 @@ function buildJake() {
     hatBase.position.set(0, 1.55 * SCALE, -0.04 * SCALE);
     group.add(hatBase);
 
+    const nk = createBox(0.19 * SCALE, 0.14 * SCALE, 0.20 * SCALE, SK);
+    nk.position.set(0, 1.21 * SCALE, 0);
+    group.add(nk);
+
+    const head = createBox(0.42 * SCALE, 0.38 * SCALE, 0.40 * SCALE, SK);
+    head.position.set(0, 1.44 * SCALE, 0);
+    group.add(head);
+
     // Red Front Panel of Cap
     const capFront = createBox(0.47 * SCALE, 0.18 * SCALE, 0.10 * SCALE, SH);
     capFront.position.set(0, 1.66 * SCALE, 0.18 * SCALE);
@@ -128,8 +136,8 @@ function buildJake() {
     const rlG = addLeg(group, 0.14 * SCALE, JN);
     const lShoeG = addShoe(llG, 0, 0x228822, null, 0x222222);
     const rShoeG = addShoe(rlG, 0, 0x228822, null, 0x222222);
-    lShoeG.position.set(0, -0.475 * SCALE, 0.05 * SCALE);
-    rShoeG.position.set(0, -0.475 * SCALE, 0.05 * SCALE);
+    lShoeG.position.set(0, -0.475 * SCALE, 0.05 * SCALE+0.1);
+    rShoeG.position.set(0, -0.475 * SCALE, 0.05 * SCALE+0.1);
 
     return { group, torso, laG, raG, llG, rlG, lShoeG, rShoeG };
 }

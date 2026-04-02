@@ -126,18 +126,42 @@ canvas { display:block; }
     color: #fff;
 }
 
+.param-reward-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 6px;
+    margin-top: 2px;
+}
+
+.param-reward-label {
+    font-family: 'Arial', sans-serif;
+    font-size: 9px;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.param-reward-value {
+    font-family: 'Arial', sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    color: #FFD700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
 /* PAUSE OVERLAY */
 #pause-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
     display: flex;
     align-items: flex-start;
     justify-content: center;
     padding-top: 15vh;
     font-size: 80px;
     font-weight: 900;
-    color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.85);
     letter-spacing: 15px;
     pointer-events: none;
     z-index: 40;
