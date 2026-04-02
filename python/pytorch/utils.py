@@ -1,8 +1,17 @@
 
 import os
+import glob
+import torch
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from datetime import datetime
+
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+weights_dir = "python/pytorch/results/weights"
+os.makedirs(weights_dir, exist_ok=True)
 
 
 class RolloutBuffer:
@@ -29,6 +38,29 @@ class RolloutBuffer:
         self.rewards.extend(other.rewards)
         self.state_values.extend(other.state_values)
         self.is_terminals.extend(other.is_terminals)
+
+
+
+
+
+def format(buffer):
+    old_states = torch.squeeze(torch.stack(buffer.states, dim=0)).detach().to(device)
+    old_actions = torch.squeeze(torch.stack(buffer.actions, dim=0)).detach().to(device)
+    old_logprobs = torch.squeeze(torch.stack(buffer.logprobs, dim=0)).detach().to(device)
+    old_state_values = torch.squeeze(torch.stack(buffer.state_values, dim=0)).detach().to(device)
+    
+    # Ensure correct dimensions if batch size is 1
+    if len(old_states.shape) == 1:
+        old_states = old_states.unsqueeze(0)
+    if len(old_actions.shape) == 0:
+        old_actions = old_actions.unsqueeze(0)
+    if len(old_logprobs.shape) == 0:
+        old_logprobs = old_logprobs.unsqueeze(0)
+    if len(old_state_values.shape) == 0:
+        old_state_values = old_state_values.unsqueeze(0)
+
+    return old_states, old_actions, old_logprobs, old_state_values
+
 
 
 
@@ -92,12 +124,53 @@ def extract_state(game_state):
 
 
 
+
+def load_best(policy, policy_old):
+    files = glob.glob(f"{weights_dir}/score_*.pth")
+    if not files:
+        print("No weights found to load.")
+        return False
+
+    best_file = None
+    best_score = -1
+    for f in files:
+        try:
+            base = os.path.basename(f)
+            score_str = base.split("_")[2].replace(".pth", "")
+            score = float(score_str)
+            if score > best_score:
+                best_score = score
+                best_file = f
+        except Exception:
+            pass
+
+    if best_file:
+        print(f"Loading best weights: {best_file} (Score: {best_score})")
+        state_dict = torch.load(best_file, map_location=device, weights_only=True)
+        policy.load_state_dict(state_dict)
+        policy_old.load_state_dict(state_dict)
+        return True
+    return False
+
+
+
+
+def save_weights(policy, score):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{weights_dir}/score_{int(score)}_{timestamp}.pth"
+    torch.save(policy.state_dict(), filename)
+    print(f"Saved weights to {filename}")
+
+
+
+
 def save_plots(scores_history, rewards_history):
     """
     scores_history: list of dict {'iteration': int, 'avg_score': float, 'best_score': float}
     rewards_history: list of dict {'iteration': int, 'avg_reward': float, 'best_reward': float}
     """
     os.makedirs("python/pytorch/results/plots", exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     if not scores_history or not rewards_history:
         print("No data to plot.")
@@ -107,30 +180,30 @@ def save_plots(scores_history, rewards_history):
     avg_scores = [d['avg_score'] for d in scores_history]
     best_scores = [d['best_score'] for d in scores_history]
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(iterations_s, avg_scores, label='Score Moyen (m)')
-    plt.plot(iterations_s, best_scores, label='Meilleur Score (m)')
-    plt.xlabel('Itération')
-    plt.ylabel('Distance (m)')
-    plt.title('Score en fonction de l\'itération')
-    plt.legend()
-    plt.grid(True)
-    plt.savefig('python/pytorch/results/plots/scores.png')
-    plt.close()
-
     iterations_r = [d['iteration'] for d in rewards_history]
     avg_rewards = [d['avg_reward'] for d in rewards_history]
     best_rewards = [d['best_reward'] for d in rewards_history]
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(iterations_r, avg_rewards, label='Reward Moyenne')
-    plt.plot(iterations_r, best_rewards, label='Meilleure Reward')
-    plt.xlabel('Itération')
-    plt.ylabel('Reward')
-    plt.title('Reward en fonction de l\'itération')
-    plt.legend()
-    plt.grid(True)
-    plt.savefig('python/pytorch/results/plots/rewards.png')
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
+
+    ax1.plot(iterations_s, avg_scores, label='Score Moyen (m)')
+    ax1.plot(iterations_s, best_scores, label='Meilleur Score (m)')
+    ax1.set_xlabel('Itération')
+    ax1.set_ylabel('Distance (m)')
+    ax1.set_title('Score en fonction de l\'itération')
+    ax1.legend()
+    ax1.grid(True)
+
+    ax2.plot(iterations_r, avg_rewards, label='Reward Moyenne')
+    ax2.plot(iterations_r, best_rewards, label='Meilleure Reward')
+    ax2.set_xlabel('Itération')
+    ax2.set_ylabel('Reward')
+    ax2.set_title('Reward en fonction de l\'itération')
+    ax2.legend()
+    ax2.grid(True)
+
+    plt.tight_layout()
+    plt.savefig(f"python/pytorch/results/plots/results_{timestamp}.png")
     plt.close()
     print("Plots saved in python/pytorch/results/plots/")
 

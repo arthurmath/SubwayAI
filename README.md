@@ -201,7 +201,7 @@ $$
 
 The Critic is trained to minimize the mean squared error between its predicted state value and the actual discounted return. The coefficient 0.5 scales its contribution relative to the policy loss.
 
-**3. Entropy bonus** — $-0.01 \times H(\pi_\theta(\cdot \mid s_t))$
+**3. Entropy bonus** — $-0.01 \cdot H(\pi_\theta(\cdot \mid s_t))$
 
 $$
 H(\pi) = -\sum_a \pi(a \mid s)\log\pi(a \mid s)
@@ -221,8 +221,10 @@ Entropy measures how spread out the action probability distribution is. Subtract
 ## To Do : 
 
 IA : 
-récompense supplémentaire quand obstacle passé
+mettre le mean score avec une virgule
 warm start depuis weights
+accelerer l'entrainnementa
+ugmenter le fréquence des training
 
 Front : 
 longueur des sauts de pièces doivent etre plus longs quand vitesse augmente (nb pièces aussi)

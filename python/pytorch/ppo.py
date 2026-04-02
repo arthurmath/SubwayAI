@@ -1,16 +1,8 @@
 import torch
 import torch.nn as nn
 from torch.distributions.categorical import Categorical
-import os
-import glob
-from datetime import datetime
 import asyncio
-
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-weights_dir = "python/pytorch/results/weights"
-os.makedirs(weights_dir, exist_ok=True)
+from utils import device, format
 
 
 class ActorCritic(nn.Module):
@@ -111,20 +103,7 @@ class Agent:
             if len(rewards) > 1:
                 rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-7)
             
-            old_states = torch.squeeze(torch.stack(buffer.states, dim=0)).detach().to(device)
-            old_actions = torch.squeeze(torch.stack(buffer.actions, dim=0)).detach().to(device)
-            old_logprobs = torch.squeeze(torch.stack(buffer.logprobs, dim=0)).detach().to(device)
-            old_state_values = torch.squeeze(torch.stack(buffer.state_values, dim=0)).detach().to(device)
-            
-            # Ensure correct dimensions if batch size is 1
-            if len(old_states.shape) == 1:
-                old_states = old_states.unsqueeze(0)
-            if len(old_actions.shape) == 0:
-                old_actions = old_actions.unsqueeze(0)
-            if len(old_logprobs.shape) == 0:
-                old_logprobs = old_logprobs.unsqueeze(0)
-            if len(old_state_values.shape) == 0:
-                old_state_values = old_state_values.unsqueeze(0)
+            old_states, old_actions, old_logprobs, old_state_values = format(buffer)
             
             advantages = rewards.detach() - old_state_values.detach()
             
@@ -150,37 +129,3 @@ class Agent:
             self.policy_old.load_state_dict(self.policy.state_dict())
             buffer.clear()
 
-
-
-    def load_best(self):
-        files = glob.glob(f"{weights_dir}/score_*.pth")
-        if not files:
-            print("No weights found to load.")
-            return False
-            
-        best_file = None
-        best_score = -1
-        for f in files:
-            try:
-                base = os.path.basename(f)
-                score_str = base.split("_")[2].replace(".pth", "")
-                score = float(score_str)
-                if score > best_score:
-                    best_score = score
-                    best_file = f
-            except Exception as e:
-                pass
-                
-        if best_file:
-            print(f"Loading best weights: {best_file} (Score: {best_score})")
-            state_dict = torch.load(best_file, map_location=device, weights_only=True)
-            self.policy.load_state_dict(state_dict)
-            self.policy_old.load_state_dict(state_dict)
-            return True
-        return False
-        
-    def save(self, score):
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{weights_dir}/score_{int(score)}_{timestamp}.pth"
-        torch.save(self.policy.state_dict(), filename)
-        print(f"Saved weights to {filename}")

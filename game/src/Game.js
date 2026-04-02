@@ -48,7 +48,7 @@ class Game {
         this.statIterationEl = document.getElementById('stat-iteration');
         this.statTrainCountEl = document.getElementById('stat-train-count');
         this.statBestDistEl = document.getElementById('stat-best-dist');
-        this.statRewardEl = document.getElementById('stat-reward');
+        this.statAvgScoreEl = document.getElementById('stat-avg-score');
         this.pauseOverlay = document.getElementById('pause-overlay');
         this.paramValueEls = {};
     }
@@ -198,7 +198,7 @@ class Game {
             const humanPlayer = this.players.find(p => !p.dead);
             if (humanPlayer) {
                 const aiState = this.extractAIState({
-                    player: { lane: humanPlayer.lane, x: humanPlayer.x, y: humanPlayer.y, vy: humanPlayer.vy, dead: humanPlayer.dead, score: humanPlayer.score, coins: humanPlayer.coins },
+                    player: { lane: humanPlayer.lane, x: humanPlayer.x, y: humanPlayer.y, vy: humanPlayer.vy, rolling: humanPlayer.rolling, dead: humanPlayer.dead, score: humanPlayer.score, coins: humanPlayer.coins },
                     ...gameState
                 });
                 this.updateParamsDisplay(aiState);
@@ -261,7 +261,7 @@ class Game {
                 if (this.statIterationEl) this.statIterationEl.textContent = stats.iteration;
                 if (this.statTrainCountEl) this.statTrainCountEl.textContent = stats.trainCount;
                 if (this.statBestDistEl) this.statBestDistEl.textContent = Math.floor(stats.bestScore) + 'm';
-                if (this.statRewardEl) this.statRewardEl.textContent = stats.reward.toFixed(2);
+                if (this.statAvgScoreEl) this.statAvgScoreEl.textContent = Math.floor(stats.avgScore) + 'm';
             }
         }
 
@@ -353,7 +353,6 @@ class Game {
             coin.active = false;
             coin.mesh.visible = false;
             player.coins++;
-            player.score += 10;
         }
     }
 

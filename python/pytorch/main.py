@@ -3,7 +3,7 @@ import asyncio
 import websockets
 import logging
 from ppo import Agent
-from utils import RolloutBuffer, extract_state, save_plots
+from utils import RolloutBuffer, extract_state, save_plots, load_best, save_weights
 
 
 # Configure logging to suppress noisy websocket handshake errors
@@ -30,6 +30,8 @@ train_count = 0
 current_game_id = -1
 global_buffer = RolloutBuffer()
 global_timestep_count = 0
+mean_reward = 0
+last_mean_score = 0
 
 
 # History tracking
@@ -40,21 +42,22 @@ history_lock = asyncio.Lock()
 
 
 async def perform_training(buffer, score):
-    global train_count, iteration_count, session_best_score, global_timestep_count
+    print(f"\nTraining PPO (buffer size: {len(buffer.states)})")
+    global train_count, iteration_count, session_best_score, global_timestep_count, mean_reward, last_mean_score
     
     if len(buffer.states) == 0:
         return
-    
-    print(f"\nTraining PPO (buffer size: {len(buffer.states)})")
-    await agent.train(buffer)
 
     # Capture stats before buffer is cleared during training
     mean_reward = sum(buffer.rewards) / len(buffer.rewards) if buffer.rewards else 0
     best_reward_in_buffer = max(buffer.rewards) if buffer.rewards else 0
     
+    await agent.train(buffer)
+    
     async with history_lock:
         train_count += 1
         avg_score = sum(episode_scores) / len(episode_scores) if episode_scores else score
+        last_mean_score = avg_score
         scores_history.append({
             'iteration': iteration_count,
             'avg_score': avg_score,
@@ -100,12 +103,12 @@ async def play_game(websocket):
                     if should_train:
                         await perform_training(global_buffer, session_best_score)
                 if mode == "ai":
-                    agent.load_best()
+                    load_best(agent.policy, agent.policy_old)
                 continue
                 
             elif msg_type == "save":
                 print(f"Training stopped. Saving weights and plots.")
-                agent.save(session_best_score)
+                save_weights(agent.policy, session_best_score)
                 save_plots(scores_history, rewards_history)
                 continue
                 
@@ -122,13 +125,10 @@ async def play_game(websocket):
                 if mode == "train":
                     # If we took an action in the previous step, calculate its reward
                     if len(local_buffer.states) > len(local_buffer.rewards):
-                        if not dead:
-                            reward = 0.1  # Base survival bonus
-                        else:
-                            reward = -10.0
-                        reward += (score - last_score) * 0.5
-                        reward += (coins - last_coins) * 2.0
-                            
+
+                        reward = (score - last_score) * 5.0 + (coins - last_coins) * 0.5
+                        if dead:
+                            reward -= 100.0
                         
                         local_buffer.rewards.append(reward)
                         local_buffer.is_terminals.append(dead)
@@ -138,7 +138,6 @@ async def play_game(websocket):
                 last_coins = coins
                 
                 if dead and mode == "train":
-                    # Store the score for averaging
                     async with history_lock:
                         episode_scores.append(score)
                         # Move local experiences to global buffer
@@ -160,7 +159,8 @@ async def play_game(websocket):
                     "iteration": int(iteration_count),
                     "train_count": int(train_count),
                     "best_score": float(session_best_score),
-                    "reward": float(current_reward)
+                    "reward": float(current_reward),
+                    "avg_score": float(last_mean_score)
                 }
                 await websocket.send(json.dumps(response))
             
@@ -196,6 +196,7 @@ async def main():
             await asyncio.Future()  # run forever
     except websockets.exceptions.ConnectionClosed:
         pass
+
 
 if __name__ == "__main__":
     try:
