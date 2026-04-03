@@ -75,7 +75,7 @@ The Actor-Critic architecture uses **two separate neural networks** that work to
 The Actor takes the current state $s$ and outputs a **probability distribution over the 5 possible actions**:
 
 $$
-\pi_\theta(a \mid s) : \mathbb{IR}^{16} \arrow \mathbb{IR}^{5}
+\pi_\theta(a \mid s) : \mathbb{IR}^{16} \to \mathbb{IR}^{5}
 $$
 $$
 \pi_\theta(a \mid s) = \text{Softmax}(W_3 \cdot \tanh(W_2 \cdot \tanh(W_1 \cdot s)))
@@ -88,7 +88,7 @@ It outputs **5 values** (one per action) that sum to 1. An action is then **samp
 The Critic also takes the state $s$, but outputs a **single scalar**: the estimated value $V(s)$ of being in that state.
 
 $$
-V_\phi(s) : \mathbb{IR}^{16} \arrow \mathbb{IR}
+V_\phi(s)&nbsp;:&nbsp;\mathbb{IR}^{16}&nbsp;\to&nbsp;\mathbb{IR}
 $$
 
 This value represents the expected total future reward from state $s$. It answers the question: *"On average, how much reward can I expect to collect from here onwards?"*
@@ -184,7 +184,7 @@ After all epochs, the old policy weights are overwritten with the new policy wei
 #### Loss Function
 
 $$
-\mathcal{L}^\text{PPO} = -\mathcal{L}^\text{CLIP}(\theta) + 0.5 \cdot \mathcal{L}^\text{CRITIC}(\phi) - 0.1 \cdot \mathcal{L}^\text{ENTROPY}(\theta)
+\mathcal{L}^\text{PPO} = -\mathcal{L}^\text{CLIP}(\theta) + 0.5 \cdot \mathcal{L}^\text{CRITIC}(\phi) - 0.1 \cdot \mathcal{L}^\text{ENT}(\theta)
 $$
 
 The total loss has three terms:
