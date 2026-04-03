@@ -68,12 +68,15 @@ Input (16)  →  Linear(64)  →  Tanh  →  Linear(64)  →  Tanh  →  Output
 
 ### Actor-Critic system
 
-The Actor-Critic architecture uses **two separate neural networks** that work together.
+The Actor-Critic architecture uses **two separate neural networks** that work together. They are respectively parametrized byt vectors $\theta$ and $\phi$
 
 #### The Actor — "What should I do?"
 
 The Actor takes the current state $s$ and outputs a **probability distribution over the 5 possible actions**:
 
+$$
+\pi_\theta(a \mid s) : \mathbb{IR}^{16} \arrow \mathbb{IR}^{5}
+$$
 $$
 \pi_\theta(a \mid s) = \text{Softmax}(W_3 \cdot \tanh(W_2 \cdot \tanh(W_1 \cdot s)))
 $$
@@ -85,7 +88,7 @@ It outputs **5 values** (one per action) that sum to 1. An action is then **samp
 The Critic also takes the state $s$, but outputs a **single scalar**: the estimated value $V(s)$ of being in that state.
 
 $$
-V_\phi(s) \in \mathbb{R}
+V_\phi(s) : \mathbb{IR}^{16} \arrow \mathbb{IR}
 $$
 
 This value represents the expected total future reward from state $s$. It answers the question: *"On average, how much reward can I expect to collect from here onwards?"*
@@ -180,31 +183,35 @@ After all epochs, the old policy weights are overwritten with the new policy wei
 
 #### Loss Function
 
-```python
-loss = -torch.min(surr1, surr2) + 0.5 * self.loss(state_values, rewards) - 0.01 * dist_entropy
-```
+$$
+\mathcal{L}^\text{PPO} = -\mathcal{L}^\text{CLIP}(\theta) + 0.5 \cdot \mathcal{L}^\text{CRITIC}(\phi) - 0.1 \cdot \mathcal{L}^\text{ENTROPY}(\theta)
+$$
 
 The total loss has three terms:
 
-**1. Clipped policy loss** — $-\min(\text{surr1},\ \text{surr2})$
+**1. Clipped policy loss**
 
 $$
-\mathcal{L}^\text{CLIP}(\theta) = -\mathbb{E}_t[\min(r(\theta)A_t,\ \text{clip}(r(\theta), 1-\varepsilon, 1+\varepsilon)A_t)]
+\mathcal{L}^\text{CLIP}(\theta) = \mathbb{E}_t[\min(r(\theta)A_t,\ \text{clip}(r(\theta), 1-\varepsilon, 1+\varepsilon)A_t)]
 $$
 
-- `surr1` is the unclipped objective: the ratio multiplied by the advantage.
-- `surr2` clips the ratio to stay within $[1-\varepsilon,\ 1+\varepsilon]$ (here $\varepsilon = 0.2$, so between 0.8 and 1.2), then multiplies by the advantage.
+- The first min term is the unclipped objective: the ratio multiplied by the advantage.
+- The second mon term clips the ratio to stay within $[1-\varepsilon,\ 1+\varepsilon]$ (here $\varepsilon = 0.2$, so between 0.8 and 1.2), then multiplies by the advantage.
 - Taking the **minimum** of the two ensures the update is never too large: if the ratio strays too far from 1 (meaning the policy has changed too much), the clipped version kicks in and limits the gradient. This is the core of PPO.
 - The **negative sign** turns this into a minimization problem (standard for gradient descent optimizers).
 
-**2. Critic loss** — $0.5 \cdot \text{MSE}(V_\phi(s_t),\ R_t)$
+**2. Critic loss** 
+
+$$
+\mathcal{L}^\text{CRITIC}(\theta) = \text{MSE}(V_\phi(s_t), R_t)
+$$
 
 The Critic is trained to minimize the mean squared error between its predicted state value and the actual discounted return. The coefficient 0.5 scales its contribution relative to the policy loss.
 
-**3. Entropy bonus** — $-0.01 \cdot H(\pi_\theta(\cdot \mid s_t))$
+**3. Entropy bonus** 
 
 $$
-H(\pi) = -\sum_a \pi(a \mid s)\log\pi(a \mid s)
+\mathcal{L}^\text{ENTROPY}(\theta) = H(\pi_\theta(\cdot \mid s_t)) = -\sum_a \pi(a \mid s) \cdot \log(\pi(a \mid s))
 $$
 
 Entropy measures how spread out the action probability distribution is. Subtracting it from the loss (i.e., *maximizing* entropy) encourages the policy to remain exploratory and avoid prematurely collapsing onto a single action. The small coefficient (0.01) keeps this effect gentle.
@@ -226,8 +233,6 @@ mean score ne change pas à chaque itération bizarre
 afficher reward dans human mode
 
 Front : 
-jambes trop longues dépassent sous les pieds
-il n'y a plus de coup
 ca n'accélère plus ?
 
 
