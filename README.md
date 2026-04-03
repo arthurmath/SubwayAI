@@ -68,14 +68,14 @@ Input (16)  →  Linear(64)  →  Tanh  →  Linear(64)  →  Tanh  →  Output
 
 ### Actor-Critic system
 
-The Actor-Critic architecture uses **two separate neural networks** that work together. They are respectively parametrized byt vectors $\theta$ and $\phi$
+The Actor-Critic architecture uses **two separate neural networks** that work together. They are respectively parameterised by vectors $\theta$ and $\phi$.
 
 #### The Actor — "What should I do?"
 
 The Actor takes the current state $s$ and outputs a **probability distribution over the 5 possible actions**:
 
 $$
-\pi_\theta(a \mid s) : \mathbb{IR}^{16} \to \mathbb{IR}^{5}
+\pi_\theta(a \mid s) : \\[1.5cm] \mathbb{IR}^{16} \& \to \% \mathbb{IR}^{5}
 $$
 $$
 \pi_\theta(a \mid s) = \text{Softmax}(W_3 \cdot \tanh(W_2 \cdot \tanh(W_1 \cdot s)))
@@ -88,7 +88,7 @@ It outputs **5 values** (one per action) that sum to 1. An action is then **samp
 The Critic also takes the state $s$, but outputs a **single scalar**: the estimated value $V(s)$ of being in that state.
 
 $$
-V_\phi(s)&nbsp;:&nbsp;\mathbb{IR}^{16}&nbsp;\to&nbsp;\mathbb{IR}
+V_\phi(s) : \mathbb{IR}^{16} \to \mathbb{IR}
 $$
 
 This value represents the expected total future reward from state $s$. It answers the question: *"On average, how much reward can I expect to collect from here onwards?"*
@@ -116,7 +116,7 @@ The Actor is trained more **cautiously** (0.0003) because its updates directly a
 
 ---
 
-### PPO: Proximal Policy Optimization
+### Proximal Policy Optimization
 
 PPO is an Actor-Critic algorithm. On top of the Actor-Critic foundation, it introduces one key innovation: **it prevents the policy from changing too drastically in a single training update**, which makes training far more stable.
 
@@ -140,7 +140,7 @@ self.policy_old.load_state_dict(self.policy.state_dict())
 After each episode, a **discounted return** $R_t$ is computed for every timestep $t$. Rather than just using the immediate reward, the agent also cares about future rewards — but discounts them by a factor $\gamma<1$ for each step into the future:
 
 $$
-R_t = r_t + \gamma r_{t+1} + \gamma^2 r_{t+2} + \cdots = \sum_{k=0}^{\infty} \gamma^k r_{t+k}
+R_t = r_t + \gamma r_{t+1} + \gamma^2 r_{t+2} + \cdots = \sum_{k=0}^{K_{dead}} \gamma^k r_{t+k}
 $$
 
 In code, this is computed backwards through the buffer (`gamma = 0.99`):
@@ -151,7 +151,7 @@ discounted_reward = reward + gamma * discounted_reward
 
 A reward received 100 steps from now is worth $0.99^{100} \approx 0.37$ times a reward received now. This encourages the agent to prefer actions that lead to *sustained* success rather than short-term gains. The returns are then **normalized** (zero mean, unit variance) to stabilize training.
 
-#### Advantages
+#### Advantage
 
 The **advantage** $A_t$ measures how much better (or worse) a taken action turned out to be compared to what the Critic expected:
 
@@ -164,9 +164,9 @@ $$
 
 The Critic's estimate $V_\phi(s_t)$ acts as a **baseline**, reducing the variance of the gradient signal and making learning much more efficient than using raw returns alone.
 
-#### Training Loop (K Epochs)
+#### Training Loop
 
-Once enough gameplay has been collected (every 2000 timesteps), the same batch of data is reused for **4 optimization epochs**. At each epoch:
+Once enough gameplay has been collected (every 2000 timesteps), the same batch of data is reused for 4 optimization epochs. At each epoch:
 
 1. **Re-evaluate** the actions from the collected data under the *current* (new) policy to get updated log-probabilities and state values.
 2. **Compute the probability ratio** between the new and old policy:
@@ -184,7 +184,7 @@ After all epochs, the old policy weights are overwritten with the new policy wei
 #### Loss Function
 
 $$
-\mathcal{L}^\text{PPO} = -\mathcal{L}^\text{CLIP}(\theta) + 0.5 \cdot \mathcal{L}^\text{CRITIC}(\phi) - 0.1 \cdot \mathcal{L}^\text{ENT}(\theta)
+\mathcal{L}^\text{PPO} = -\mathcal{L}^\text{CLIP}(\theta) + 0.5 \cdot \mathcal{L}^\text{CRITIC}(\phi) - 0.01 \cdot \mathcal{L}^\text{ENT}(\theta)
 $$
 
 The total loss has three terms:
@@ -203,7 +203,7 @@ $$
 **2. Critic loss** 
 
 $$
-\mathcal{L}^\text{CRITIC}(\theta) = \text{MSE}(V_\phi(s_t), R_t)
+\mathcal{L}^\text{CRITIC}(\phi) = \text{MSE}(V_\phi(s_t), R_t)
 $$
 
 The Critic is trained to minimize the mean squared error between its predicted state value and the actual discounted return. The coefficient 0.5 scales its contribution relative to the policy loss.
@@ -211,7 +211,7 @@ The Critic is trained to minimize the mean squared error between its predicted s
 **3. Entropy bonus** 
 
 $$
-\mathcal{L}^\text{ENTROPY}(\theta) = H(\pi_\theta(\cdot \mid s_t)) = -\sum_a \pi(a \mid s) \cdot \log(\pi(a \mid s))
+\mathcal{L}^\text{ENT}(\theta) = H(\pi_\theta(\cdot \mid s_t)) = -\sum_a \pi(a \mid s) \cdot \log(\pi(a \mid s))
 $$
 
 Entropy measures how spread out the action probability distribution is. Subtracting it from the loss (i.e., *maximizing* entropy) encourages the policy to remain exploratory and avoid prematurely collapsing onto a single action. The small coefficient (0.01) keeps this effect gentle.
@@ -229,8 +229,7 @@ Entropy measures how spread out the action probability distribution is. Subtract
 
 IA : 
 accelerer l'entrainement (augmenter nb agents?)
-mean score ne change pas à chaque itération bizarre
-afficher reward dans human mode
+mean score ne change pas à chaque itération 
 
 Front : 
 ca n'accélère plus ?
