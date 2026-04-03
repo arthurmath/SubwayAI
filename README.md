@@ -75,7 +75,7 @@ The Actor-Critic architecture uses **two separate neural networks** that work to
 The Actor takes the current state $s$ and outputs a **probability distribution over the 5 possible actions**:
 
 $$
-\pi_\theta(a \mid s) : \mathbb{IR}^{16} \& \to \mathbb{IR}^{5}
+\pi_\theta(a \mid s) : \\[1.5cm] \mathbb{IR}^{16} \% \to \mathbb{IR}^{5}
 $$
 $$
 \pi_\theta(a \mid s) = \text{Softmax}(W_3 \cdot \tanh(W_2 \cdot \tanh(W_1 \cdot s)))
