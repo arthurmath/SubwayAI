@@ -92,7 +92,8 @@ class AIController extends Controller {
                         trainCount: data.train_count,
                         bestScore: data.best_score,
                         reward: data.reward,
-                        avgScore: data.avg_score
+                        avgScore: data.avg_score,
+                        probs: data.probs ?? null
                     };
                 }
                 this.waitingForAction = false;

@@ -9,6 +9,9 @@ Open game/index.html file in your browser
 python3 python/pytorch/main.py
 
 
+![Game Screenshot](readme-image.png)
+
+
 
 ## AI Agent
 
@@ -208,7 +211,7 @@ $$
 
 The Critic is trained to minimize the mean squared error between its predicted state value and the actual discounted return. The coefficient 0.5 scales its contribution relative to the policy loss.
 
-**3. Entropy bonus** 
+**3. Entropy loss** 
 
 $$
 \mathcal{L}^\text{ENT}(\theta) = H(\pi_\theta(\cdot \mid s_t)) = -\sum_a \pi(a \mid s) \cdot \log(\pi(a \mid s))
@@ -228,6 +231,8 @@ Entropy measures how spread out the action probability distribution is. Subtract
 ## To Do : 
 
 IA : 
+Donner une reward positive quand l'agent passe avec succès un osbtacle
+en mode play IA, afficher les probabilités associées aux 5 actions en live
 accelerer l'entrainement (augmenter nb agents?)
 mean score ne change pas à chaque itération 
 

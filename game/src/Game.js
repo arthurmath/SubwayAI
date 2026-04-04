@@ -45,6 +45,8 @@ class Game {
         this.goScreen = document.getElementById('go-screen');
         this.paramsContainer = document.getElementById('ai-params-container');
         this.statsContainer = document.getElementById('ai-stats');
+        this.probsContainer = document.getElementById('ai-probs');
+        this.probEls = { L: document.getElementById('prob-L'), R: document.getElementById('prob-R'), J: document.getElementById('prob-J'), S: document.getElementById('prob-S'), N: document.getElementById('prob-N') };
         this.statIterationEl = document.getElementById('stat-iteration');
         this.statTrainCountEl = document.getElementById('stat-train-count');
         this.statBestDistEl = document.getElementById('stat-best-dist');
@@ -278,6 +280,17 @@ class Game {
                 if (this.statTrainCountEl) this.statTrainCountEl.textContent = stats.trainCount;
                 if (this.statBestDistEl) this.statBestDistEl.textContent = Math.floor(stats.bestScore) + 'm';
                 if (this.statAvgScoreEl) this.statAvgScoreEl.textContent = stats.avgScore.toFixed(1) + 'm';
+            }
+        }
+
+        if (this.mode === 'ai' && this.probsContainer) {
+            this.probsContainer.classList.remove('hidden');
+            const aiPlayer = this.players.find(p => p.controller && p.controller.stats && p.controller.stats.probs);
+            if (aiPlayer) {
+                const probs = aiPlayer.controller.stats.probs;
+                ['L', 'R', 'J', 'S', 'N'].forEach((k, i) => {
+                    if (this.probEls[k]) this.probEls[k].textContent = (probs[i] * 100).toFixed(1) + '%';
+                });
             }
         }
 

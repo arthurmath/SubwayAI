@@ -48,6 +48,18 @@
             <div class="stat-item">Best Run: <span id="stat-best-dist">0m</span></div>
             <div class="stat-item">Mean Score: <span id="stat-avg-score">0m</span></div>
         </div>
+        <div id="ai-probs" class="hidden">
+            <table id="ai-probs-table">
+                <thead><tr><th>Action</th><th>Probability</th></tr></thead>
+                <tbody>
+                    <tr><td>Left</td><td id="prob-L">-</td></tr>
+                    <tr><td>Right</td><td id="prob-R">-</td></tr>
+                    <tr><td>Jump</td><td id="prob-J">-</td></tr>
+                    <tr><td>Slide</td><td id="prob-S">-</td></tr>
+                    <tr><td>Nothing</td><td id="prob-N">-</td></tr>
+                </tbody>
+            </table>
+        </div>
         <div id="ai-params-container" class="hidden"></div>
         <div id="pause-overlay" class="hidden">PAUSE</div>
         <button id="stop-training-btn" class="hidden" style="margin-bottom: 10px; padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; z-index: 100; pointer-events: auto;">🛑 STOP TRAINING</button>

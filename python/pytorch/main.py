@@ -22,8 +22,8 @@ agent = Agent(
     lr_actor=0.0003, 
     lr_critic=0.001, 
     gamma=0.99, 
-    epochs=4, 
-    eps_clip=0.2
+    epochs=10, 
+    eps=0.2
 )
 
 session_best_score = 0
@@ -174,6 +174,7 @@ async def play_game(websocket):
             elif msg_type == "state":
                 game_state = msg_data.get("data", {})
                 player = game_state.get('player', {})
+                obstacles = game_state.get('obstacles', [])
                 dead = player.get('dead', False)
                 score = player.get('score', 0)
                 coins = player.get('coins', 0)
@@ -186,8 +187,23 @@ async def play_game(websocket):
                     if len(local_buffer.states) > len(local_buffer.rewards):
 
                         reward = (score - last_score) * 5.0 + (coins - last_coins) * 0.5
+
+                        # Danger penalty: penalize being in a lane with a close obstacle
+                        # that the current state/action didn't avoid.
+                        # Rolling avoids "high" obstacles, so exempt those.
+                        rolling = player.get('rolling', False)
+                        player_lane = player.get('lane', 1)
+                        close_obs = [
+                            o for o in obstacles
+                            if o.get('lane') == player_lane and -20.0 < o.get('z', -999) < 0
+                        ]
+                        for o in close_obs:
+                            if not (o.get('type') == 'high' and rolling):
+                                reward -= 3.0
+                                break
+
                         if dead:
-                            reward -= 100.0
+                            reward -= 50.0
                         
                         local_buffer.rewards.append(reward)
                         local_buffer.is_terminals.append(dead)
@@ -211,7 +227,7 @@ async def play_game(websocket):
                 if mode == "train":
                     action = agent.act_train(state, local_buffer)
                 else:
-                    action = agent.act_play(state)
+                    action, probs = agent.act_play(state)
                 
                 response = {
                     "action": ACTIONS[action],
@@ -221,6 +237,8 @@ async def play_game(websocket):
                     "reward": float(current_reward),
                     "avg_score": float(last_mean_score)
                 }
+                if mode == "ai":
+                    response["probs"] = probs
                 await websocket.send(json.dumps(response))
             
     except websockets.exceptions.ConnectionClosed:

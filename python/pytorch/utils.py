@@ -1,6 +1,7 @@
 
 import os
 import glob
+import numpy as np
 import torch
 import matplotlib
 matplotlib.use('Agg')
@@ -164,6 +165,13 @@ def save_weights(policy, score):
 
 
 
+def _moving_average(values, window=20):
+    if len(values) < window:
+        window = max(1, len(values))
+    kernel = np.ones(window) / window
+    return np.convolve(values, kernel, mode='valid')
+
+
 def save_plots(scores_history, rewards_history):
     """
     scores_history: list of dict {'iteration': int, 'avg_score': float, 'best_score': float}
@@ -171,40 +179,61 @@ def save_plots(scores_history, rewards_history):
     """
     os.makedirs("python/pytorch/results/plots", exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
+
     if not scores_history or not rewards_history:
         print("No data to plot.")
         return
 
     iterations_s = [d['iteration'] for d in scores_history]
-    avg_scores = [d['avg_score'] for d in scores_history]
-    best_scores = [d['best_score'] for d in scores_history]
+    avg_scores   = [d['avg_score']  for d in scores_history]
+    best_scores  = [d['best_score'] for d in scores_history]
 
-    iterations_r = [d['iteration'] for d in rewards_history]
-    avg_rewards = [d['avg_reward'] for d in rewards_history]
+    iterations_r = [d['iteration']   for d in rewards_history]
+    avg_rewards  = [d['avg_reward']  for d in rewards_history]
     best_rewards = [d['best_reward'] for d in rewards_history]
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
+    def _make_figure(iterations, best_values, raw_values, best_label, raw_label, y_label, title_best, title_raw, filepath):
+        fig, (ax_top, ax_bot) = plt.subplots(2, 1, figsize=(10, 10))
 
-    ax1.plot(iterations_s, avg_scores, label='Score Moyen (m)')
-    ax1.plot(iterations_s, best_scores, label='Meilleur Score (m)')
-    ax1.set_xlabel('Itération')
-    ax1.set_ylabel('Distance (m)')
-    ax1.set_title('Score en fonction de l\'itération')
-    ax1.legend()
-    ax1.grid(True)
+        ax_top.plot(iterations, best_values, color='orange', label=best_label)
+        ax_top.set_xlabel('Itération')
+        ax_top.set_ylabel(y_label)
+        ax_top.set_title(title_best)
+        ax_top.legend()
+        ax_top.grid(True)
 
-    ax2.plot(iterations_r, avg_rewards, label='Reward Moyenne')
-    ax2.plot(iterations_r, best_rewards, label='Meilleure Reward')
-    ax2.set_xlabel('Itération')
-    ax2.set_ylabel('Reward')
-    ax2.set_title('Reward en fonction de l\'itération')
-    ax2.legend()
-    ax2.grid(True)
+        ax_bot.plot(iterations, raw_values, color='blue', alpha=0.5, label=raw_label)
+        ma = _moving_average(raw_values)
+        ma_iterations = iterations[len(iterations) - len(ma):]
+        ax_bot.plot(ma_iterations, ma, color='black', linewidth=2, label='Moyenne mobile')
+        ax_bot.set_xlabel('Itération')
+        ax_bot.set_ylabel(y_label)
+        ax_bot.set_title(title_raw)
+        ax_bot.legend()
+        ax_bot.grid(True)
 
-    plt.tight_layout()
-    plt.savefig(f"python/pytorch/results/plots/results_{timestamp}.png")
-    plt.close()
+        plt.tight_layout()
+        plt.savefig(filepath)
+        plt.close()
+
+    _make_figure(
+        iterations_s, best_scores, avg_scores,
+        best_label='Meilleur Score (m)', raw_label='Score Moyen (m)',
+        y_label='Distance (m)',
+        title_best='Meilleur Score en fonction de l\'itération',
+        title_raw='Score en fonction de l\'itération',
+        filepath=f"python/pytorch/results/plots/scores_{timestamp}.png",
+    )
+
+    _make_figure(
+        iterations_r, best_rewards, avg_rewards,
+        best_label='Meilleure Reward', raw_label='Reward Moyenne',
+        y_label='Reward',
+        title_best='Meilleure Reward en fonction de l\'itération',
+        title_raw='Reward en fonction de l\'itération',
+        filepath=f"python/pytorch/results/plots/rewards_{timestamp}.png",
+    )
+
     print("Plots saved in python/pytorch/results/plots/")
 
 

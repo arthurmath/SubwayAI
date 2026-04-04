@@ -66,9 +66,11 @@ class Agent:
         with torch.no_grad():
             state_t = torch.FloatTensor(state).to(device)
             action_probs = self.policy_old.actor(state_t)
-            action = torch.argmax(action_probs)
+            # action = torch.argmax(action_probs)
+            dist = Categorical(action_probs)
+            action = dist.sample()
 
-        return action.item()
+        return action.item(), action_probs.tolist()
 
 
     def act_train(self, state, buffer):
@@ -119,7 +121,7 @@ class Agent:
                 surr1 = ratios * advantages
                 surr2 = torch.clamp(ratios, 1-self.eps, 1+self.eps) * advantages
                 
-                loss = -torch.min(surr1, surr2) + 0.5 * self.loss(state_values, rewards) - 0.01 * dist_entropy
+                loss = -torch.min(surr1, surr2) + 0.5 * self.loss(state_values, rewards) - 0.05 * dist_entropy
                 
                 self.optimizer.zero_grad()
                 loss.mean().backward()
