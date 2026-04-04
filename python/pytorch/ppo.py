@@ -43,9 +43,9 @@ class ActorCritic(nn.Module):
 
 
 class Agent:
-    def __init__(self, state_dim, action_dim, lr_actor, lr_critic, gamma, epochs, eps_clip):
+    def __init__(self, state_dim, action_dim, lr_actor, lr_critic, gamma, epochs, eps):
         self.gamma = gamma
-        self.eps_clip = eps_clip
+        self.eps = eps
         self.epochs = epochs
         
         self.policy = ActorCritic(state_dim, action_dim).to(device)
@@ -117,7 +117,7 @@ class Agent:
                 ratios = torch.exp(logprobs - old_logprobs.detach())
                 
                 surr1 = ratios * advantages
-                surr2 = torch.clamp(ratios, 1-self.eps_clip, 1+self.eps_clip) * advantages
+                surr2 = torch.clamp(ratios, 1-self.eps, 1+self.eps) * advantages
                 
                 loss = -torch.min(surr1, surr2) + 0.5 * self.loss(state_values, rewards) - 0.01 * dist_entropy
                 

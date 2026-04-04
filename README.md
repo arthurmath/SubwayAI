@@ -32,7 +32,7 @@ The agent can choose from **5 discrete actions** at each step:
 
 ### State Space
 
-The state fed to the neural network is a vector of **16 normalized values** $s \in \mathbb{R}^{16}$ coming from the game.
+The state fed to the neural network is a vector $s$ of **16 normalized values** coming from the game.
 
 #### 1. Player Parameters
 - **Lane**: Current horizontal position $\in \{-1.0, 0.0, 1.0\}$ (left, center, right).
@@ -58,7 +58,7 @@ For each lane, the system tracks coins located **before** the next obstacle on t
 
 ### Neural Network Architecture
 
-Both the Actor and the Critic share the same architecture: two fully-connected hidden layers of 64 neurons with Tanh activations. The input is always the 16-dimensional state vector $s$.
+Both the Actor and the Critic share the same architecture: two fully-connected hidden layers of 64 neurons with Tanh activations. The input is always the state vector $s \in \mathbb{R}^{16}$.
 
 ```
 Input (16)  →  Linear(64)  →  Tanh  →  Linear(64)  →  Tanh  →  Output
@@ -75,7 +75,7 @@ The Actor-Critic architecture uses **two separate neural networks** that work to
 The Actor takes the current state $s$ and outputs a **probability distribution over the 5 possible actions**:
 
 $$
-\pi_\theta(a \mid s) : \\[1.5cm] \mathbb{IR}^{16} \% \to \mathbb{IR}^{5}
+\pi_\theta(a \mid s) : \mathbb{IR}^{16} \to \mathbb{IR}^{5}
 $$
 $$
 \pi_\theta(a \mid s) = \text{Softmax}(W_3 \cdot \tanh(W_2 \cdot \tanh(W_1 \cdot s)))
@@ -118,7 +118,7 @@ The Actor is trained more **cautiously** (0.0003) because its updates directly a
 
 ### Proximal Policy Optimization
 
-PPO is an Actor-Critic algorithm. On top of the Actor-Critic foundation, it introduces one key innovation: **it prevents the policy from changing too drastically in a single training update**, which makes training far more stable.
+PPO is an Actor-Critic algorithm. “Proximal” means staying close to the original behavior, and “Policy Optimization” is about finding better strategies. On top of the Actor-Critic foundation, it introduces one key innovation: **it prevents the policy from changing too drastically in a single training update**, which makes training far more stable. 
 
 #### Old Policy vs. New Policy
 
@@ -192,7 +192,7 @@ The total loss has three terms:
 **1. Clipped policy loss**
 
 $$
-\mathcal{L}^\text{CLIP}(\theta) = \mathbb{E}_t[\min(r(\theta)A_t,\ \text{clip}(r(\theta), 1-\varepsilon, 1+\varepsilon)A_t)]
+\mathcal{L}^\text{CLIP}(\theta) = \mathbb{E}_t[\min(r(\theta) \cdot A_t,\ \text{clip}(r(\theta), 1-\varepsilon, 1+\varepsilon) \cdot A_t)]
 $$
 
 - The first min term is the unclipped objective: the ratio multiplied by the advantage.
@@ -236,12 +236,12 @@ ca n'accélère plus ?
 
 
 
-Save weights command:
-
-python -c "
-import asyncio, websockets, json
-async def send_save():
-    async with websockets.connect('ws://127.0.0.1:8765') as ws:
-        await ws.send(json.dumps({'type': 'save'}))
-asyncio.run(send_save())
-"
+Save weights command:  
+  
+python -c "  
+import asyncio, websockets, json  
+async def send_save():  
+    async with websockets.connect('ws://127.0.0.1:8765') as ws:  
+        await ws.send(json.dumps({'type': 'save'}))  
+asyncio.run(send_save())  
+"  
