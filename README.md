@@ -15,7 +15,7 @@ python3 python/pytorch/main.py
 
 ## AI Agent
 
-The AI is trained using **Proximal Policy Optimization (PPO)**, a reinforcement learning algorithm. At each game step, the game sends its current state to a Python server over a WebSocket. The AI picks an action, which is sent back to the game, and the game transitions to a new state. The AI is then given a reward reflecting how well it performed.
+The AI is trained using **Proximal Policy Optimization (PPO)**, a reinforcement learning algorithm. At each game step, the game sends its current state to a Python server over a WebSocket. The AI picks an action, which is sent back to the game, and the game transitions to a new state. The AI is then given a reward reflecting how well it performed and is trained when enough data has been collected (every ~5 iterations).
 
 ---
 
@@ -47,10 +47,10 @@ The state fed to the neural network is a vector $s$ of **16 normalized values** 
 For each of the 3 lanes, two values describe the next upcoming obstacle:
 - **LX_Z**: Distance of the obstacle from the player. Closer to 0.0 means it is approaching fast. Defaults to 1.0 if no obstacle is visible.
 - **LX_T**: Obstacle type, encoding how to avoid it:
-    - `-1.0`: **Nothing** — lane is clear.
-    - `0.0`: **Low barrier** — can be jumped over or slid under.
-    - `0.5`: **High fence** — must slide under.
-    - `1.0`: **Train** — must switch lanes or jump on top.
+    - `-1.0`: **Nothing** - lane is clear.
+    - `0.0`: **Low barrier** - must be jumped over.
+    - `0.5`: **High fence** - must slide under.
+    - `1.0`: **Train** - must switch lane.
 
 #### 3. Coins 
 For each lane, the system tracks coins located **before** the next obstacle on that lane:
@@ -73,7 +73,7 @@ Input (16)  →  Linear(64)  →  Tanh  →  Linear(64)  →  Tanh  →  Output
 
 The Actor-Critic architecture uses **two separate neural networks** that work together. They are respectively parameterised by vectors $\theta$ and $\phi$.
 
-#### The Actor — "What should I do?"
+#### The Actor - "What should I do?"
 
 The Actor takes the current state $s$ and outputs a **probability distribution over the 5 possible actions**:
 
@@ -84,9 +84,9 @@ $$
 \pi_\theta(a \mid s) = \text{Softmax}(W_3 \cdot \tanh(W_2 \cdot \tanh(W_1 \cdot s)))
 $$
 
-It outputs **5 values** (one per action) that sum to 1. An action is then **sampled** from this distribution during training, or the **argmax** is taken during inference. This probabilistic output is essential: if the actor always picked the same action deterministically, it would never explore new strategies.
+It outputs **5 values** (one per action) that sum to 1. An action is then **sampled** from this distribution during training. This probabilistic output is essential: if the actor always picked the same action deterministically, it would never explore new strategies. But during inference, we want to play the best move according to the neural network, so the **argmax** of the distribution is taken.
 
-#### The Critic — "How good is this situation?"
+#### The Critic - "How good is this situation?"
 
 The Critic also takes the state $s$, but outputs a **single scalar**: the estimated value $V(s)$ of being in that state.
 
@@ -98,13 +98,7 @@ This value represents the expected total future reward from state $s$. It answer
 
 #### Why Two Networks?
 
-The Critic exists to **guide the Actor's learning**. Without it, the Actor would only know whether an episode was good or bad overall — it would have no sense of which specific actions within the episode were responsible. The Critic provides a **baseline**: the advantage $A(s, a)$ measures whether an action was better or worse than what was expected:
-
-$$
-A(s, a) = R - V_\phi(s)
-$$
-
-where $R$ is the actual discounted return collected. If the advantage is positive, the action was better than expected and the Actor should do it more. If it is negative, the Actor should do it less.
+The Critic exists to **guide the Actor's learning**. Without it, the Actor would only know whether an episode was good or bad overall, it would have no sense of which specific actions within the episode were responsible. This value will be later compared to the actual collected reward to know whether an action was better or worse than expected.
 
 #### Why Different Learning Rates?
 
@@ -113,7 +107,7 @@ lr_actor  = 0.0003
 lr_critic = 0.001
 ```
 
-The Critic is trained with a **higher learning rate** (0.001) because it needs to quickly learn accurate value estimates — it is solving a regression problem with a clear numerical target. If the Critic is slow to converge, the advantage signal used to train the Actor is inaccurate, which destabilizes the whole system.
+The Critic is trained with a **higher learning rate** (0.001) because it needs to quickly learn accurate value estimates, it is solving a regression problem with a clear numerical target. If the Critic is slow to converge, the advantage signal used to train the Actor is inaccurate, which destabilizes the whole system.
 
 The Actor is trained more **cautiously** (0.0003) because its updates directly affect the policy that plays the game. Large, aggressive updates could cause the policy to collapse (e.g., always picking the same action). The Actor must improve incrementally to remain stable.
 
@@ -130,7 +124,7 @@ self.policy     = ActorCritic(state_dim, action_dim)  # the policy being trained
 self.policy_old = ActorCritic(state_dim, action_dim)  # frozen snapshot used to collect data
 ```
 
-Two copies of the same network are kept. The **old policy** $\pi_{\theta_\text{old}}$ is a frozen snapshot used to collect gameplay experience — its weights do not change during a training update. The **new policy** $\pi_\theta$ is the one being actively trained.
+Two copies of the same network are kept. The **old policy** $\pi_{\theta_\text{old}}$ is a frozen snapshot used to collect gameplay experience - its weights do not change during a training update. The **new policy** $\pi_\theta$ is the one being actively trained.
 
 This separation is fundamental to PPO: to measure how much the policy has shifted, we need to compare the new policy's action probabilities against what they were *when the data was collected*. Without this reference, there would be no way to limit the size of the update. Once training is complete, the old policy is updated to match the new one:
 
@@ -140,7 +134,7 @@ self.policy_old.load_state_dict(self.policy.state_dict())
 
 #### Discounted Return
 
-After each episode, a **discounted return** $R_t$ is computed for every timestep $t$. Rather than just using the immediate reward, the agent also cares about future rewards — but discounts them by a factor $\gamma<1$ for each step into the future:
+After each episode, a **discounted return** $R_t$ is computed for every timestep $t$. Rather than just using the immediate reward, the agent also cares about future rewards - but discounts them by a factor $\gamma<1$ for each step into the future:
 
 $$
 R_t = r_t + \gamma r_{t+1} + \gamma^2 r_{t+2} + \cdots = \sum_{k=0}^{K_{dead}} \gamma^k r_{t+k}
@@ -162,8 +156,8 @@ $$
 A_t = R_t - V_\phi(s_t)
 $$
 
-- If $A_t > 0$: the action led to *more* reward than expected — the Actor should do it more often.
-- If $A_t < 0$: the action led to *less* reward than expected — the Actor should do it less often.
+- If $A_t > 0$: the action led to *more* reward than expected - the Actor should do it more often.
+- If $A_t < 0$: the action led to *less* reward than expected - the Actor should do it less often.
 
 The Critic's estimate $V_\phi(s_t)$ acts as a **baseline**, reducing the variance of the gradient signal and making learning much more efficient than using raw returns alone.
 
@@ -175,7 +169,7 @@ Once enough gameplay has been collected (every 2000 timesteps), the same batch o
 2. **Compute the probability ratio** between the new and old policy:
 
 $$
-r(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_\text{old}}(a_t \mid s_t)} = \exp\left(\log\pi_\theta(a_t \mid s_t) - \log\pi_{\theta_\text{old}}(a_t \mid s_t)\right)
+r(\theta) = \frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_\text{old}}(a_t \mid s_t)} = \exp\left(\log(\pi_\theta(a_t \mid s_t)) - \log(\pi_{\theta_\text{old}}(a_t \mid s_t))\right)
 $$
 
 A ratio $r(\theta) > 1$ means the new policy assigns *higher* probability to that action than the old one; $r(\theta) < 1$ means it assigns lower probability.
@@ -187,15 +181,15 @@ After all epochs, the old policy weights are overwritten with the new policy wei
 #### Loss Function
 
 $$
-\mathcal{L}^\text{PPO} = -\mathcal{L}^\text{CLIP}(\theta) + 0.5 \cdot \mathcal{L}^\text{CRITIC}(\phi) - 0.01 \cdot \mathcal{L}^\text{ENT}(\theta)
+\mathcal{L}^\text{PPO} = -\mathcal{L}^\text{POLICY}(\theta) + c_1 \cdot \mathcal{L}^\text{CRITIC}(\phi) - c_2 \cdot \mathcal{L}^\text{ENT}(\theta)
 $$
 
-The total loss has three terms:
+The parameters $c_1$ and $c_2$ are set respectively to 0.01 and 0.05. The total loss has three terms:
 
 **1. Clipped policy loss**
 
 $$
-\mathcal{L}^\text{CLIP}(\theta) = \mathbb{E}_t[\min(r(\theta) \cdot A_t,\ \text{clip}(r(\theta), 1-\varepsilon, 1+\varepsilon) \cdot A_t)]
+\mathcal{L}^\text{POLICY}(\theta) = \mathbb{E}_t[\min(r(\theta) \cdot A_t,\ \text{clip}(r(\theta), 1-\varepsilon, 1+\varepsilon) \cdot A_t)]
 $$
 
 - The first min term is the unclipped objective: the ratio multiplied by the advantage.
@@ -214,7 +208,7 @@ The Critic is trained to minimize the mean squared error between its predicted s
 **3. Entropy loss** 
 
 $$
-\mathcal{L}^\text{ENT}(\theta) = H(\pi_\theta(\cdot \mid s_t)) = -\sum_a \pi(a \mid s) \cdot \log(\pi(a \mid s))
+\mathcal{L}^\text{ENT}(\theta) = H(\pi_\theta(\cdot \mid s_t)) = -\sum_a \pi_\theta(a \mid s) \cdot \log(\pi_\theta(a \mid s))
 $$
 
 Entropy measures how spread out the action probability distribution is. Subtracting it from the loss (i.e., *maximizing* entropy) encourages the policy to remain exploratory and avoid prematurely collapsing onto a single action. The small coefficient (0.01) keeps this effect gentle.

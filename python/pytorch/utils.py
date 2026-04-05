@@ -194,7 +194,8 @@ def save_plots(scores_history, rewards_history):
 
     iterations_r = [d['iteration']   for d in rewards_history]
     avg_rewards  = [d['avg_reward']  for d in rewards_history]
-    best_rewards = [d['best_reward'] for d in rewards_history]
+    raw_best_rewards = [d['best_reward'] for d in rewards_history]
+    best_rewards = list(np.maximum.accumulate(raw_best_rewards))
 
     def _make_figure(iterations, best_values, raw_values, best_label, raw_label, y_label, title_best, title_raw, filepath):
         fig, (ax_top, ax_bot) = plt.subplots(2, 1, figsize=(10, 10))

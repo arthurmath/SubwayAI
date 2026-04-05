@@ -43,11 +43,13 @@ class ActorCritic(nn.Module):
 
 
 class Agent:
-    def __init__(self, state_dim, action_dim, lr_actor, lr_critic, gamma, epochs, eps):
+    def __init__(self, state_dim, action_dim, lr_actor, lr_critic, gamma, epochs, eps, c1, c2):
+        self.epochs = epochs
         self.gamma = gamma
         self.eps = eps
-        self.epochs = epochs
-        
+        self.c1 = c1
+        self.c2 = c2
+
         self.policy = ActorCritic(state_dim, action_dim).to(device)
         self.policy_old = ActorCritic(state_dim, action_dim).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
@@ -120,7 +122,7 @@ class Agent:
                 surr1 = ratios * advantages
                 surr2 = torch.clamp(ratios, 1-self.eps, 1+self.eps) * advantages
                 
-                loss = -torch.min(surr1, surr2) + 0.5 * self.loss(state_values, rewards) - 0.05 * dist_entropy
+                loss = -torch.min(surr1, surr2) + self.c1 * self.loss(state_values, rewards) - self.c2 * dist_entropy
                 
                 self.optimizer.zero_grad()
                 loss.mean().backward()
@@ -129,4 +131,3 @@ class Agent:
             # Copy new weights into old policy
             self.policy_old.load_state_dict(self.policy.state_dict())
             buffer.clear()
-
