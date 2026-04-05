@@ -163,13 +163,17 @@ def save_weights(policy, score):
     print(f"Saved weights to {filename}")
 
 
-
-
-def _moving_average(values, window=20):
-    if len(values) < window:
-        window = max(1, len(values))
-    kernel = np.ones(window) / window
-    return np.convolve(values, kernel, mode='valid')
+def _moving_average(values):
+    len_window = 10
+    moyenne_mobile = []
+    for i in range(len(values)):
+        if i < len_window:
+            start_index = 0
+        else:
+            start_index = i - len_window + 1
+        window = values[start_index: i + 1]
+        moyenne_mobile.append(sum(window) / len(window))
+    return moyenne_mobile
 
 
 def save_plots(scores_history, rewards_history):
@@ -260,3 +264,11 @@ def save_plots(scores_history, rewards_history):
 #     except websockets.exceptions.ConnectionClosed:
 #         print("Client disconnected.")
 
+
+
+
+# def moving_average(values, window=20):
+#     if len(values) < window:
+#         window = max(1, len(values))
+#     kernel = np.ones(window) / window
+#     return np.convolve(values, kernel, mode='valid')

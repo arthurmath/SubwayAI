@@ -66,9 +66,8 @@ class Agent:
         with torch.no_grad():
             state_t = torch.FloatTensor(state).to(device)
             action_probs = self.policy_old.actor(state_t)
-            # action = torch.argmax(action_probs)
-            dist = Categorical(action_probs)
-            action = dist.sample()
+            action = torch.argmax(action_probs)
+            # action = Categorical(action_probs).sample()
 
         return action.item(), action_probs.tolist()
 

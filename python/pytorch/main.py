@@ -188,19 +188,18 @@ async def play_game(websocket):
 
                         reward = (score - last_score) * 5.0 + (coins - last_coins) * 0.5
 
-                        # Danger penalty: penalize being in a lane with a close obstacle
-                        # that the current state/action didn't avoid.
-                        # Rolling avoids "high" obstacles, so exempt those.
-                        rolling = player.get('rolling', False)
-                        player_lane = player.get('lane', 1)
-                        close_obs = [
-                            o for o in obstacles
-                            if o.get('lane') == player_lane and -20.0 < o.get('z', -999) < 0
-                        ]
-                        for o in close_obs:
-                            if not (o.get('type') == 'high' and rolling):
-                                reward -= 3.0
-                                break
+                        # # Danger penalty: penalize being in a lane with a close obstacle
+                        # # that the current state/action didn't avoid.
+                        # # Rolling avoids "high" obstacles, so exempt those.
+                        # rolling = player.get('rolling', False)
+                        # player_lane = player.get('lane', 1)
+                        # close_obs = [o for o in obstacles
+                        #     if o.get('lane') == player_lane and -20.0 < o.get('z', -999) < 0
+                        # ]
+                        # for o in close_obs:
+                        #     if not (o.get('type') == 'high' and rolling):
+                        #         reward -= 3.0
+                        #         break
 
                         if dead:
                             reward -= 50.0
