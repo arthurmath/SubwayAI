@@ -230,18 +230,12 @@ Entropy measures how spread out the action probability distribution is. Subtract
 
 ## To Do : 
 
-IA : 
 Donner une reward positive quand l'agent passe avec succès un obstacle
-ajouter nb training front
 accelerer l'entrainement (augmenter nb agents?)
-mean score ne change pas à chaque itération 
-
-Front : 
-ca n'accélère plus ?
+Faire des passages avec 3 obstacles pour obliger l'IA a faire une action (2 trains max)
 
 
-
-Améliorations : epochs 4 -> 10, death penalty 100 -> 50, entropy coef 0.01 -> 0.05
+Améliorations : epochs 4 -> 10, death penalty 100 -> 50, entropy coef 0.01 -> 0.05  
 
 
 

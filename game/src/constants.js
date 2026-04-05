@@ -2,8 +2,7 @@
 const LANES = [-2.2, 0, 2.2];
 const BASE_SPEED = 14;
 const MAX_SPEED_MULT = 2.5;
-const SPEED_STEP = 0.18;
-const SCORE_LEVEL_FOR_SPEEDUP = 500;
+const SPEED_ACCEL = 0.007; // multiplier gained per second (reaches max in ~3.5 min)
 
 const JUMP_VELOCITY = 10.5;
 const GRAVITY = -28;

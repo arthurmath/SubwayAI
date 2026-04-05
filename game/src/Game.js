@@ -9,7 +9,6 @@ class Game {
         this.coins = [];
         this.active = false;
         this.speedMultiplier = 1.0;
-        this.lastSpeedUpScore = 0;
         this.time = 0;
         this.paused = false;
 
@@ -40,8 +39,7 @@ class Game {
     setupUI() {
         this.scoreEl = document.getElementById('score-val');
         this.coinEl = document.getElementById('coin-val');
-        this.aliveCountEl = document.getElementById('alive-count');
-        this.flashEl = document.getElementById('speed-flash');
+        this.aliveInfoEl = document.getElementById('alive-info');
         this.goScreen = document.getElementById('go-screen');
         this.paramsContainer = document.getElementById('ai-params-container');
         this.statsContainer = document.getElementById('ai-stats');
@@ -80,17 +78,16 @@ class Game {
         this.paused = false;
         if (this.pauseOverlay) this.pauseOverlay.classList.add('hidden');
         this.speedMultiplier = 1.0;
-        this.lastSpeedUpScore = 0;
         this.time = 0;
         this.lastHumanScore = 0;
         this.lastHumanCoins = 0;
         this.totalHumanReward = 0;
         
-        if (this.mode === 'train' && this.aliveCountEl) {
-            this.aliveCountEl.classList.remove('hidden');
+        if (this.mode === 'train' && this.aliveInfoEl) {
+            this.aliveInfoEl.classList.remove('hidden');
             if (this.statsContainer) this.statsContainer.classList.remove('hidden');
-        } else if (this.aliveCountEl) {
-            this.aliveCountEl.classList.add('hidden');
+        } else if (this.aliveInfoEl) {
+            this.aliveInfoEl.classList.add('hidden');
             if (this.statsContainer) this.statsContainer.classList.add('hidden');
         }
         
@@ -247,12 +244,8 @@ class Game {
             return;
         }
 
-        // Speed Up Logic
-        if (maxScore - this.lastSpeedUpScore >= SCORE_LEVEL_FOR_SPEEDUP) {
-            this.lastSpeedUpScore = maxScore;
-            this.speedMultiplier = Math.min(this.speedMultiplier + SPEED_STEP, MAX_SPEED_MULT);
-            this.showFlash();
-        }
+        // Continuous speed increase
+        this.speedMultiplier = Math.min(this.speedMultiplier + SPEED_ACCEL * dt, MAX_SPEED_MULT);
 
         // Update Obstacles & Coins
         this.updateObstacles(dt, speed);
@@ -263,7 +256,7 @@ class Game {
         this.scoreEl.textContent = Math.floor(maxScore) + 'm';
         this.coinEl.textContent = totalCoins;
 
-        if (this.mode === 'train' && this.aliveCountEl) {
+        if (this.mode === 'train' && this.aliveInfoEl) {
             const alivePlayers = this.players.filter(p => !p.dead);
             const aliveCount = alivePlayers.length;
             this.aliveCountEl.textContent = `Agents: ${aliveCount}/${this.players.length}`;
@@ -278,6 +271,7 @@ class Game {
                 const stats = statsSource.controller.stats;
                 if (this.statIterationEl) this.statIterationEl.textContent = stats.iteration;
                 if (this.statTrainCountEl) this.statTrainCountEl.textContent = stats.trainCount;
+                if (this.aliveTrainCountEl) this.aliveTrainCountEl.textContent = `Trainings: ${stats.trainCount}`;
                 if (this.statBestDistEl) this.statBestDistEl.textContent = Math.floor(stats.bestScore) + 'm';
                 if (this.statAvgScoreEl) this.statAvgScoreEl.textContent = stats.avgScore.toFixed(1) + 'm';
             }
@@ -397,11 +391,6 @@ class Game {
         this.world.camera.lookAt(new THREE.Vector3(avgX * 0.05, 0.8, -10));
     }
 
-    showFlash() {
-        this.flashEl.style.opacity = '1';
-        setTimeout(() => this.flashEl.style.opacity = '0', 1400);
-    }
-
     gameOver(score, coins) {
         this.active = false;
         this.paused = false;
@@ -432,7 +421,7 @@ class Game {
         
         document.getElementById('start-screen').classList.remove('hidden');
         document.getElementById('stop-training-btn').classList.add('hidden');
-        if (this.aliveCountEl) this.aliveCountEl.classList.add('hidden');
+        if (this.aliveInfoEl) this.aliveInfoEl.classList.add('hidden');
         if (this.statsContainer) this.statsContainer.classList.add('hidden');
         this.goScreen.classList.add('hidden');
     }

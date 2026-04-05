@@ -13,12 +13,14 @@ logging.getLogger('websockets').setLevel(logging.ERROR)
 
 # Left, Right, Jump, Slide, Nothing
 ACTIONS = ['L', 'R', 'J', 'S', None]
+ACTION_DIM = len(ACTIONS)
+STATE_DIM = 16
 UPDATE_TIMESTEP = 1000
 
 
 agent = Agent(
-    state_dim=16, 
-    action_dim=len(ACTIONS), 
+    state_dim=STATE_DIM, 
+    action_dim=ACTION_DIM, 
     lr_actor=0.0003, 
     lr_critic=0.001, 
     gamma=0.99, 
@@ -77,7 +79,7 @@ async def perform_training(buffer, score):
 
 
 async def play_game(websocket):
-    global session_best_score, iteration_count, train_count, current_game_id, global_timestep_count, ready_for_new_session
+    global session_best_score, iteration_count, train_count, current_game_id, global_timestep_count, ready_for_new_session, last_mean_score
     
     local_buffer = RolloutBuffer()
     last_score = 0
@@ -101,13 +103,15 @@ async def play_game(websocket):
                         if game_id != current_game_id:
                             current_game_id = game_id
                             iteration_count += 1
-                            print(f"Game iteration: {iteration_count}")
+                            if episode_scores:
+                                last_mean_score = sum(episode_scores) / len(episode_scores)
+                            print(f"Game iteration: {iteration_count}, last mean score: {last_mean_score:.3f}m")
                             if global_timestep_count >= UPDATE_TIMESTEP:
                                 should_train = True
                             if warm_start and ready_for_new_session:
                                 do_warm_start = True
                                 ready_for_new_session = False
-                    if should_train:
+                    if should_train:    
                         await perform_training(global_buffer, session_best_score)
                     if do_warm_start:
                         weights_file = msg_data.get("weights_file")
