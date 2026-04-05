@@ -92,6 +92,8 @@ class Game {
         }
         
         this.players.forEach(p => p.reset());
+        this.obstacleLineCount = 0;
+        this.nextTripleLine = 5 + Math.floor(Math.random() * 4);
         this.clearEnvironment();
         this.seedWorld();
         
@@ -115,10 +117,25 @@ class Game {
     spawnCluster(z) {
         const availableLanes = [0, 1, 2];
         this.shuffle(availableLanes);
-        const count = Math.random() < 0.52 ? 1 : 2;
 
+        this.obstacleLineCount++;
+        const isTriple = this.obstacleLineCount >= this.nextTripleLine;
+        let count;
+        if (isTriple) {
+            count = 3;
+            this.obstacleLineCount = 0;
+            this.nextTripleLine = 5 + Math.floor(Math.random() * 4);
+        } else {
+            count = Math.random() < 0.52 ? 1 : 2;
+        }
+
+        let trainCount = 0;
         for (let i = 0; i < count; i++) {
-            const type = this.pickRandomType();
+            let type = this.pickRandomType();
+            if (isTriple && type === 'train') {
+                if (trainCount >= 2) type = Math.random() < 0.5 ? 'high' : 'low';
+                else trainCount++;
+            }
             const obs = this.obstacles.find(o => !o.active && o.type === type) || this.obstacles.find(o => !o.active);
             if (!obs) continue;
 
