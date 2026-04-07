@@ -224,6 +224,7 @@ Entropy measures how spread out the action probability distribution is. Subtract
 
 ## To Do : 
 
+Mettre les couches cachée du nn en parametre de class Agent
 Donner une reward positive quand l'agent passe avec succès un obstacle
 accelerer l'entrainement (augmenter nb agents?)
 
