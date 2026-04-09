@@ -232,7 +232,7 @@ async def play_game(websocket):
                 if mode == "train":
                     action = agent.act_train(state, local_buffer)
                 else:
-                    action, probs = agent.act_play(state)
+                    action, probs, state_val = agent.act_play(state)
                 
                 response = {
                     "action": ACTIONS[action],
@@ -244,6 +244,7 @@ async def play_game(websocket):
                 }
                 if mode == "ai":
                     response["probs"] = probs
+                    response["state_val"] = state_val
                 await websocket.send(json.dumps(response))
             
     except websockets.exceptions.ConnectionClosed:

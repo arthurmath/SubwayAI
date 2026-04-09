@@ -8,21 +8,25 @@ from utils import device, format
 class ActorCritic(nn.Module):
     def __init__(self, state_dim, action_dim, layers):
         super(ActorCritic, self).__init__()
-        self.actor = nn.Sequential(
-            nn.Linear(state_dim, layers[0]),
-            nn.Tanh(),
-            nn.Linear(layers[0], layers[1]),
-            nn.Tanh(),
-            nn.Linear(layers[1], action_dim),
-            nn.Softmax(dim=-1)
-        )
-        self.critic = nn.Sequential(
-            nn.Linear(state_dim, layers[0]),
-            nn.Tanh(),
-            nn.Linear(layers[0], layers[1]),
-            nn.Tanh(),
-            nn.Linear(layers[1], 1)
-        )
+        
+        actor_layers = []
+        last_dim = state_dim
+        for layer_dim in layers:
+            actor_layers.append(nn.Linear(last_dim, layer_dim))
+            actor_layers.append(nn.Tanh())
+            last_dim = layer_dim
+        actor_layers.append(nn.Linear(last_dim, action_dim))
+        actor_layers.append(nn.Softmax(dim=-1))
+        self.actor = nn.Sequential(*actor_layers)
+
+        critic_layers = []
+        last_dim = state_dim
+        for layer_dim in layers:
+            critic_layers.append(nn.Linear(last_dim, layer_dim))
+            critic_layers.append(nn.Tanh())
+            last_dim = layer_dim
+        critic_layers.append(nn.Linear(last_dim, 1))
+        self.critic = nn.Sequential(*critic_layers)
         
     def act(self, state):
         action_probs = self.actor(state)
@@ -68,10 +72,11 @@ class Agent:
         with torch.no_grad():
             state_t = torch.FloatTensor(state).to(device)
             action_probs = self.policy_old.actor(state_t)
+            state_val = self.policy_old.critic(state_t)
             action = torch.argmax(action_probs)
             # action = Categorical(action_probs).sample()
 
-        return action.item(), action_probs.tolist()
+        return action.item(), action_probs.tolist(), state_val.item()
 
 
     def act_train(self, state, buffer):

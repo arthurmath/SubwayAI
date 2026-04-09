@@ -46,7 +46,7 @@ class Game {
         this.paramsContainer = document.getElementById('ai-params-container');
         this.statsContainer = document.getElementById('ai-stats');
         this.probsContainer = document.getElementById('ai-probs');
-        this.probEls = { L: document.getElementById('prob-L'), R: document.getElementById('prob-R'), J: document.getElementById('prob-J'), S: document.getElementById('prob-S'), N: document.getElementById('prob-N') };
+        this.probEls = { L: document.getElementById('prob-L'), R: document.getElementById('prob-R'), J: document.getElementById('prob-J'), S: document.getElementById('prob-S'), N: document.getElementById('prob-N'), V: document.getElementById('prob-V') };
         this.statIterationEl = document.getElementById('stat-iteration');
         this.statTrainCountEl = document.getElementById('stat-train-count');
         this.statBestDistEl = document.getElementById('stat-best-dist');
@@ -305,6 +305,9 @@ class Game {
                 ['L', 'R', 'J', 'S', 'N'].forEach((k, i) => {
                     if (this.probEls[k]) this.probEls[k].textContent = (probs[i] * 100).toFixed(1) + '%';
                 });
+                if (aiPlayer.controller.stats.state_val != null && this.probEls['V']) {
+                    this.probEls['V'].textContent = aiPlayer.controller.stats.state_val.toFixed(3);
+                }
             }
         }
 

@@ -48,17 +48,23 @@
             <div class="stat-item">Best Run: <span id="stat-best-dist">0m</span></div>
             <div class="stat-item">Mean Score: <span id="stat-avg-score">0m</span></div>
         </div>
-        <div id="ai-probs" class="hidden">
-            <table id="ai-probs-table">
-                <thead><tr><th>Action</th><th>Probability</th></tr></thead>
-                <tbody>
-                    <tr><td>Left</td><td id="prob-L">-</td></tr>
-                    <tr><td>Right</td><td id="prob-R">-</td></tr>
-                    <tr><td>Jump</td><td id="prob-J">-</td></tr>
-                    <tr><td>Slide</td><td id="prob-S">-</td></tr>
-                    <tr><td>Nothing</td><td id="prob-N">-</td></tr>
-                </tbody>
-            </table>
+        <div id="ai-probs" class="hidden" style="display: flex; flex-direction: row; align-items: flex-start; gap: 8px; background: transparent; padding: 0;">
+            <div style="background: rgba(0, 0, 0, 0.4); padding: 10px; border-radius: 8px;">
+                <table id="ai-probs-table">
+                    <thead><tr><th>Action</th><th>Probability</th></tr></thead>
+                    <tbody>
+                        <tr><td>Left</td><td id="prob-L">-</td></tr>
+                        <tr><td>Right</td><td id="prob-R">-</td></tr>
+                        <tr><td>Jump</td><td id="prob-J">-</td></tr>
+                        <tr><td>Slide</td><td id="prob-S">-</td></tr>
+                        <tr><td>Nothing</td><td id="prob-N">-</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="background: rgba(0, 0, 0, 0.4); padding: 8px 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-family: 'Arial', sans-serif;">
+                <span style="font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: bold;">Critic Reward Estimation</span>
+                <span id="prob-V" style="font-size: 13px; font-weight: bold; color: #FFD700; margin-left: 15px;">-</span>
+            </div>
         </div>
         <div id="ai-params-container" class="hidden"></div>
         <div id="pause-overlay" class="hidden">PAUSE</div>
