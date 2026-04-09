@@ -6,22 +6,22 @@ from utils import device, format
 
 
 class ActorCritic(nn.Module):
-    def __init__(self, state_dim, action_dim):
+    def __init__(self, state_dim, action_dim, layers):
         super(ActorCritic, self).__init__()
         self.actor = nn.Sequential(
-            nn.Linear(state_dim, 64),
+            nn.Linear(state_dim, layers[0]),
             nn.Tanh(),
-            nn.Linear(64, 64),
+            nn.Linear(layers[0], layers[1]),
             nn.Tanh(),
-            nn.Linear(64, action_dim),
+            nn.Linear(layers[1], action_dim),
             nn.Softmax(dim=-1)
         )
         self.critic = nn.Sequential(
-            nn.Linear(state_dim, 64),
+            nn.Linear(state_dim, layers[0]),
             nn.Tanh(),
-            nn.Linear(64, 64),
+            nn.Linear(layers[0], layers[1]),
             nn.Tanh(),
-            nn.Linear(64, 1)
+            nn.Linear(layers[1], 1)
         )
         
     def act(self, state):
@@ -43,15 +43,15 @@ class ActorCritic(nn.Module):
 
 
 class Agent:
-    def __init__(self, state_dim, action_dim, lr_actor, lr_critic, gamma, epochs, eps, c1, c2):
+    def __init__(self, state_dim, action_dim, layers, lr_actor, lr_critic, gamma, epochs, eps, c1, c2):
         self.epochs = epochs
         self.gamma = gamma
         self.eps = eps
         self.c1 = c1
         self.c2 = c2
 
-        self.policy = ActorCritic(state_dim, action_dim).to(device)
-        self.policy_old = ActorCritic(state_dim, action_dim).to(device)
+        self.policy = ActorCritic(state_dim, action_dim, layers).to(device)
+        self.policy_old = ActorCritic(state_dim, action_dim, layers).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.loss = nn.MSELoss()

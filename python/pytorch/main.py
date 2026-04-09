@@ -20,6 +20,7 @@ UPDATE_TIMESTEP = 1000
 agent = Agent(
     state_dim=16, 
     action_dim=len(ACTIONS), 
+    layers=[64, 64],
     lr_actor=0.0003, 
     lr_critic=0.001, 
     gamma=0.99, 

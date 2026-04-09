@@ -247,8 +247,6 @@ class Player {
             const dx = LANES[this.lane] - this.x;
             this.mesh.rotation.z += (-dx * 0.16 - this.mesh.rotation.z) * 0.18;
         }
-
-        // Shoe bobbing is now handled by leg hierarchy
     }
 
     triggerDeath() {

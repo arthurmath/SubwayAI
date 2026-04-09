@@ -40,6 +40,8 @@ class Game {
         this.scoreEl = document.getElementById('score-val');
         this.coinEl = document.getElementById('coin-val');
         this.aliveInfoEl = document.getElementById('alive-info');
+        this.aliveCountEl = document.getElementById('alive-count');
+        this.aliveTrainCountEl = document.getElementById('alive-train-count');
         this.goScreen = document.getElementById('go-screen');
         this.paramsContainer = document.getElementById('ai-params-container');
         this.statsContainer = document.getElementById('ai-stats');
@@ -120,6 +122,7 @@ class Game {
 
         this.obstacleLineCount++;
         const isTriple = this.obstacleLineCount >= this.nextTripleLine;
+        // const isTriple = false;
         let count;
         if (isTriple) {
             count = 3;

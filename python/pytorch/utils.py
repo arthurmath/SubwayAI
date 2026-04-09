@@ -164,7 +164,7 @@ def save_weights(policy, score):
 
 
 def _moving_average(values):
-    len_window = 10
+    len_window = len(values) // 10
     moyenne_mobile = []
     for i in range(len(values)):
         if i < len_window:
