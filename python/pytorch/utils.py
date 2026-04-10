@@ -4,7 +4,6 @@ import glob
 import numpy as np
 import torch
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from datetime import datetime
 
@@ -164,7 +163,7 @@ def save_weights(policy, score):
 
 
 def _moving_average(values):
-    len_window = len(values) // 10
+    len_window = len(values) // 5
     moyenne_mobile = []
     for i in range(len(values)):
         if i < len_window:
@@ -181,12 +180,22 @@ def save_plots(scores_history, rewards_history):
     scores_history: list of dict {'iteration': int, 'avg_score': float, 'best_score': float}
     rewards_history: list of dict {'iteration': int, 'avg_reward': float, 'best_reward': float}
     """
+    matplotlib.use('Agg')
     os.makedirs("python/pytorch/results/plots", exist_ok=True)
+    os.makedirs("python/pytorch/results/series", exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     if not scores_history or not rewards_history:
         print("No data to plot.")
         return
+
+    # Save history lists to a file
+    series_path = f"python/pytorch/results/series/history_{timestamp}.pth"
+    torch.save({
+        'scores_history': scores_history,
+        'rewards_history': rewards_history
+    }, series_path)
+    print(f"History lists saved to {series_path}")
 
     iterations_s = [d['iteration'] for d in scores_history]
     avg_scores   = [d['avg_score']  for d in scores_history]
@@ -243,6 +252,26 @@ def save_plots(scores_history, rewards_history):
 
 
 
+if __name__ == "__main__":
+    # Test with synthetic data
+    import random
+
+    current_score = 7.0
+    num_iterations = 1500
+    # Generate synthetic data with an upward trend and some noise, similar to the image
+    scores_history = [current_score := current_score + random.uniform(-20.0, 25) for _ in range(num_iterations)]
+    averages = _moving_average(scores_history)
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(scores_history, label='Scores')
+    plt.plot(averages, label='Averages')
+    plt.xlabel('Itération')
+    plt.ylabel('Score')
+    plt.title('Scores et moyennes mobiles (synthétiques)')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
 
 
 
@@ -258,12 +287,11 @@ def save_plots(scores_history, rewards_history):
 #             # Manually set custom probability array for actions.
 #             probs = np.array([0.1, 0.1, 0.1, 0.1, 0.6], dtype=np.float32)
 #             action_idx = np.random.choice(len(ACTIONS), p=probs)
-
 #             response = {"action": ACTIONS[action_idx]}
 #             await websocket.send(json.dumps(response))
-
 #     except websockets.exceptions.ConnectionClosed:
 #         print("Client disconnected.")
+
 
 
 

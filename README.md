@@ -224,14 +224,12 @@ Entropy measures how spread out the action probability distribution is. Subtract
 
 ## To Do : 
 
-<<<<<<< Updated upstream
-Mettre les couches cachée du nn en parametre de class Agent
-=======
-ai player mode afficher V(phi)
->>>>>>> Stashed changes
 Donner une reward positive quand l'agent passe avec succès un obstacle
 accelerer l'entrainement (augmenter nb agents?)
 L'agent ne peut pas voir les sauts de pièces
+modifier fonction plot window mean, choisir le parametre taille window sur données synth
+Supprimer trainings vers front train ai
+pénaliser stumble
 
 
 Améliorations : epochs 4 -> 10, death penalty 100 -> 50, entropy coef 0.01 -> 0.05  
