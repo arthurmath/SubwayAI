@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const warmStartBtn = document.getElementById('warm-start-btn');
     const aiWeightsList = document.getElementById('ai-weights-list');
     const warmWeightsList = document.getElementById('warm-weights-list');
+    const goRestartBtn = document.getElementById('go-restart-btn');
+    const goHomeBtn = document.getElementById('go-home-btn');
     
     let currentMode = 'human';
     let currentGameId = 0;
@@ -96,9 +98,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Restart Game from GO Screen
-    goScreen.addEventListener('click', () => {
+    goScreen.addEventListener('click', (e) => {
+        // Only trigger if we didn't click a button
+        if (e.target.classList.contains('mode-btn')) return;
         initGame();
     });
+
+    if (goRestartBtn) {
+        goRestartBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            initGame();
+        });
+    }
+
+    if (goHomeBtn) {
+        goHomeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            goScreen.classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            game.clearPlayers();
+        });
+    }
 
     // Space/Enter to start
     window.addEventListener('keydown', (e) => {
