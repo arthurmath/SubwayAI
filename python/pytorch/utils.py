@@ -123,6 +123,13 @@ def extract_state(game_state):
 
 
 
+def save_weights(policy, score):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{weights_dir}/score_{int(score)}_{timestamp}.pth"
+    torch.save(policy.state_dict(), filename)
+    print(f"Saved weights to {filename}")
+
+
 
 
 def load_best(policy, policy_old):
@@ -155,15 +162,8 @@ def load_best(policy, policy_old):
 
 
 
-def save_weights(policy, score):
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{weights_dir}/score_{int(score)}_{timestamp}.pth"
-    torch.save(policy.state_dict(), filename)
-    print(f"Saved weights to {filename}")
-
-
-def _moving_average(values):
-    len_window = len(values) // 5
+def moving_average(values):
+    len_window = len(values) // 8
     moyenne_mobile = []
     for i in range(len(values)):
         if i < len_window:
@@ -175,14 +175,14 @@ def _moving_average(values):
     return moyenne_mobile
 
 
+
+
 def save_plots(scores_history, rewards_history):
     """
     scores_history: list of dict {'iteration': int, 'avg_score': float, 'best_score': float}
     rewards_history: list of dict {'iteration': int, 'avg_reward': float, 'best_reward': float}
     """
     matplotlib.use('Agg')
-    os.makedirs("python/pytorch/results/plots", exist_ok=True)
-    os.makedirs("python/pytorch/results/series", exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     if not scores_history or not rewards_history:
@@ -217,7 +217,7 @@ def save_plots(scores_history, rewards_history):
         ax_top.grid(True)
 
         ax_bot.plot(iterations, raw_values, color='blue', alpha=0.5, label=raw_label)
-        ma = _moving_average(raw_values)
+        ma = moving_average(raw_values)
         ma_iterations = iterations[len(iterations) - len(ma):]
         ax_bot.plot(ma_iterations, ma, color='black', linewidth=2, label='Moyenne mobile')
         ax_bot.set_xlabel('Itération')
@@ -260,7 +260,7 @@ if __name__ == "__main__":
     num_iterations = 1500
     # Generate synthetic data with an upward trend
     scores_history = [current_score := current_score + random.uniform(-20.0, 25) for _ in range(num_iterations)]
-    averages = _moving_average(scores_history)
+    averages = moving_average(scores_history)
 
     plt.figure(figsize=(10, 5))
     plt.plot(scores_history, label='Scores')
