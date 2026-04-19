@@ -14,7 +14,8 @@ all_scores_history = []
 files = [
     "python/pytorch/results/series/history_20260411_085311.pth",
     "python/pytorch/results/series/history_20260412_121748.pth",
-    "python/pytorch/results/series/history_20260419_102224.pth"
+    "python/pytorch/results/series/history_20260419_102224.pth",
+    "python/pytorch/results/series/history_20260419_220344.pth",
 ]
 
 for file in files:
