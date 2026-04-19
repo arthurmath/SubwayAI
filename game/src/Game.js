@@ -41,7 +41,6 @@ class Game {
         this.coinEl = document.getElementById('coin-val');
         this.aliveInfoEl = document.getElementById('alive-info');
         this.aliveCountEl = document.getElementById('alive-count');
-        this.aliveTrainCountEl = document.getElementById('alive-train-count');
         this.goScreen = document.getElementById('go-screen');
         this.paramsContainer = document.getElementById('ai-params-container');
         this.statsContainer = document.getElementById('ai-stats');
@@ -421,6 +420,17 @@ class Game {
         document.getElementById('go-score').textContent = Math.floor(score) + 'm';
         document.getElementById('go-coins-earned').textContent = '+' + coins;
         this.goScreen.classList.remove('hidden');
+
+        const goBtns = document.getElementById('go-btns');
+        const goHint = document.getElementById('go-hint');
+        
+        if (this.mode === 'human') {
+            if (goBtns) goBtns.classList.remove('hidden');
+            if (goHint) goHint.textContent = 'OR PRESS SPACE TO RESTART';
+        } else {
+            if (goBtns) goBtns.classList.add('hidden');
+            if (goHint) goHint.textContent = 'TAP / SPACE TO RESTART';
+        }
         
         if (this.mode === 'train') {
             setTimeout(() => {

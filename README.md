@@ -38,9 +38,9 @@ The agent can choose from **5 discrete actions** at each step:
 The state fed to the neural network is a vector $s$ of **16 normalized values** coming from the game.
 
 #### 1. Player Parameters
-- **Lane**: Current horizontal position $\in \{-1.0, 0.0, 1.0\}$ (left, center, right).
+- **Lane**: Current horizontal position $\in [-1, 0, 1]$ (left, center, right).
 - **Y**: Current player height, normalized by 3.0.
-- **Sliding**: Whether the player is currently sliding (0.0 or 1.0).
+- **Sliding**: Whether the player is currently sliding (0 or 1).
 - **Speed**: Current game speed, normalized by 10.0.
 
 #### 2. Obstacles 
@@ -228,7 +228,6 @@ Donner une reward positive quand l'agent passe avec succès un obstacle
 pénaliser stumble
 accelerer l'entrainement (augmenter nb agents?)
 L'agent ne peut pas voir les sauts de pièces
-Supprimer trainings vers front train ai
 
 
 Améliorations : epochs 4 -> 10, death penalty 100 -> 50, entropy coef 0.01 -> 0.05  
