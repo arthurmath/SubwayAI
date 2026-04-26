@@ -392,7 +392,12 @@ class Game {
             if (!coin.active) continue;
             if (coin.z < -1.55 || coin.z > 1.55) continue;
             if (Math.abs(px - LANES[coin.lane]) > 0.92) continue;
-            if (Math.abs((py + 0.85) - coin.baseY) > 1.0) continue;
+
+            // Hitbox height depends on whether the player is sliding
+            const playerCenterY = player.rolling ? (py + 0.4) : (py + 0.85);
+            const hitboxHalfHeight = player.rolling ? 0.45 : 1.0;
+
+            if (Math.abs(playerCenterY - coin.baseY) > hitboxHalfHeight) continue;
 
             // Collect
             coin.active = false;
