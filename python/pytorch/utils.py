@@ -258,7 +258,7 @@ if __name__ == "__main__":
 
     current_score = 7.0
     num_iterations = 1500
-    # Generate synthetic data with an upward trend and some noise, similar to the image
+    # Generate synthetic data with an upward trend
     scores_history = [current_score := current_score + random.uniform(-20.0, 25) for _ in range(num_iterations)]
     averages = moving_average(scores_history)
 

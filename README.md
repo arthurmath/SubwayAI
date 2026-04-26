@@ -39,16 +39,16 @@ The state fed to the neural network is a vector $s$ of **16 normalized values** 
 
 #### 1. Player Parameters
 - **Lane**: Current horizontal position $\in [-1, 0, 1]$ (left, center, right).
-- **Y**: Current player height, normalized by 3.0.
+- **Y**: Current player height.
 - **Sliding**: Whether the player is currently sliding (0 or 1).
-- **Speed**: Current game speed, normalized by 10.0.
+- **Speed**: Current game speed.
 
 #### 2. Obstacles 
 For each of the 3 lanes, two values describe the next upcoming obstacle:
 - **LX_Z**: Distance of the obstacle from the player. Closer to 0.0 means it is approaching fast. Defaults to 1.0 if no obstacle is visible.
 - **LX_T**: Obstacle type, encoding how to avoid it:
     - `-1.0`: **Nothing** - lane is clear.
-    - `0.0`: **Low barrier** - must be jumped over.
+    - `0.0`: **Low barrier** - must jump over.
     - `0.5`: **High fence** - must slide under.
     - `1.0`: **Train** - must switch lane.
 
@@ -61,7 +61,7 @@ For each lane, the system tracks coins located **before** the next obstacle on t
 
 ### Neural Network Architecture
 
-Both the Actor and the Critic share the same architecture: two fully-connected hidden layers of 64 neurons with Tanh activations. The input is always the state vector $s \in \mathbb{R}^{16}$.
+Both the Actor and the Critic share the same architecture: two fully-connected hidden layers of 64 neurons with Tanh activations. The input is always the state vector $s \in \mathbb{IR}^{16}$.
 
 ```
 Input (16)  →  Linear(64)  →  Tanh  →  Linear(64)  →  Tanh  →  Output
@@ -109,7 +109,7 @@ lr_critic = 0.001
 
 The Critic is trained with a **higher learning rate** (0.001) because it needs to quickly learn accurate value estimates, it is solving a regression problem with a clear numerical target. If the Critic is slow to converge, the advantage signal used to train the Actor is inaccurate, which destabilizes the whole system.
 
-The Actor is trained more **cautiously** (0.0003) because its updates directly affect the policy that plays the game. Large, aggressive updates could cause the policy to collapse (e.g., always picking the same action). The Actor must improve incrementally to remain stable.
+The Actor is trained more **cautiously** (0.0003) because its updates directly affect the policy that plays the game. Large, aggressive updates could cause the policy to collapse (e.g. always picking the same action). The Actor must improve incrementally to remain stable.
 
 ---
 
@@ -189,13 +189,12 @@ The parameters $c_1$ and $c_2$ are set respectively to 0.01 and 0.05. The total 
 **1. Clipped policy loss**
 
 $$
-\mathcal{L}^\text{POLICY}(\theta) = \mathbb{E}_t[\min(r(\theta) \cdot A_t,\ \text{clip}(r(\theta), 1-\varepsilon, 1+\varepsilon) \cdot A_t)]
+\mathcal{L}^\text{POLICY}(\theta) = \min(r(\theta) \cdot A_t,\ \text{clip}(r(\theta), 1-\varepsilon, 1+\varepsilon) \cdot A_t)
 $$
 
 - The first min term is the unclipped objective: the ratio multiplied by the advantage.
-- The second mon term clips the ratio to stay within $[1-\varepsilon,\ 1+\varepsilon]$ (here $\varepsilon = 0.2$, so between 0.8 and 1.2), then multiplies by the advantage.
+- The second min term clips the ratio to stay within $[1-\varepsilon,\ 1+\varepsilon]$ (here $\varepsilon = 0.2$, so between 0.8 and 1.2), then multiplies by the advantage.
 - Taking the **minimum** of the two ensures the update is never too large: if the ratio strays too far from 1 (meaning the policy has changed too much), the clipped version kicks in and limits the gradient. This is the core of PPO.
-- The **negative sign** turns this into a minimization problem (standard for gradient descent optimizers).
 
 **2. Critic loss** 
 
@@ -228,6 +227,7 @@ Donner une reward positive quand l'agent passe avec succès un obstacle
 pénaliser stumble
 accelerer l'entrainement (augmenter nb agents?)
 L'agent ne peut pas voir les sauts de pièces
+Faire un bot sans RL
 
 
 Améliorations : epochs 4 -> 10, death penalty 100 -> 50, entropy coef 0.01 -> 0.05  
