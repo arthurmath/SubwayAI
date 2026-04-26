@@ -13,7 +13,7 @@ logging.getLogger('websockets').setLevel(logging.ERROR)
 
 # Left, Right, Jump, Slide, Nothing
 ACTIONS = ['L', 'R', 'J', 'S', None]
-UPDATE_TIMESTEP = 1000
+UPDATE_TIMESTEP = 2048
 # NB_AI_PLAYERS in game/constants.js
 
 
@@ -23,11 +23,13 @@ agent = Agent(
     layers=[64, 64],
     lr_actor=0.0003, 
     lr_critic=0.001, 
-    gamma=0.99, 
-    epochs=10, 
+    gamma=0.98, 
+    epochs=4, 
     eps=0.2,
-    c1=0.01,
-    c2=0.05
+    c1=0.5,
+    c2=0.05,
+    gae_lambda=0.95, 
+    batch_size=256
 )
 
 session_best_score = 0
@@ -208,7 +210,7 @@ async def play_game(websocket):
                                 break
 
                         if dead:
-                            reward -= 50.0
+                            reward -= 10.0
                         
                         local_buffer.rewards.append(reward)
                         local_buffer.is_terminals.append(dead)
