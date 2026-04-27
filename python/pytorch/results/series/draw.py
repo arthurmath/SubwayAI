@@ -20,6 +20,8 @@ files = [
     "python/pytorch/results/series/history_20260419_220344.pth",
 ]
 
+# files = ["python/pytorch/results/series/history_20260427_094736.pth"]
+
 for file in files:
     data = torch.load(file)
     all_scores_history.extend(data['scores_history'])
