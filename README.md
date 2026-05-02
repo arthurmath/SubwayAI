@@ -223,7 +223,6 @@ Entropy measures how spread out the action probability distribution is. Subtract
 
 ## To Do : 
 
-faire un petit menu quand l'agent AI player dies
 Donner une reward positive quand l'agent passe avec succès un obstacle
 pénaliser stumble
 accelerer l'entrainement (augmenter nb agents?)
@@ -243,7 +242,4 @@ async def send_save():
     async with websockets.connect('ws://127.0.0.1:8765') as ws:  
         await ws.send(json.dumps({'type': 'save'}))  
 asyncio.run(send_save())  
-"  
-
-
-score_500_20260412_121747.pth : 2300 it, 1200 trainings (warm start depuis score_450 2000 it)
+"

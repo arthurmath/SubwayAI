@@ -170,7 +170,7 @@ async def play_game(websocket):
 
             elif msg_type == "save":
                 print(f"\nTraining stopped. Saving weights and plots.")
-                    save_weights(agent.policy, agent.optimizer, session_best_score)
+                save_weights(agent.policy, agent.optimizer, session_best_score)
                 save_plots(scores_history, rewards_history)
                 ready_for_new_session = True
                 continue

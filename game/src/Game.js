@@ -429,7 +429,7 @@ class Game {
         const goBtns = document.getElementById('go-btns');
         const goHint = document.getElementById('go-hint');
         
-        if (this.mode === 'human') {
+        if (this.mode === 'human' || this.mode === 'ai') {
             if (goBtns) goBtns.classList.remove('hidden');
             if (goHint) goHint.textContent = 'OR PRESS SPACE TO RESTART';
         } else {
