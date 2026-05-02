@@ -223,6 +223,7 @@ Entropy measures how spread out the action probability distribution is. Subtract
 
 ## To Do : 
 
+faire un petit menu quand l'agent AI player dies
 Donner une reward positive quand l'agent passe avec succès un obstacle
 pénaliser stumble
 accelerer l'entrainement (augmenter nb agents?)

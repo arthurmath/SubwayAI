@@ -123,16 +123,35 @@ def extract_state(game_state):
 
 
 
-def save_weights(policy, score):
+def save_weights(policy, optimizer, score):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"{weights_dir}/score_{int(score)}_{timestamp}.pth"
-    torch.save(policy.state_dict(), filename)
+    torch.save({
+        'policy': policy.state_dict(),
+        'optimizer': optimizer.state_dict(),
+    }, filename)
     print(f"Saved weights to {filename}")
 
 
+def _load_checkpoint(path, policy, policy_old, optimizer=None):
+    """Load a checkpoint file, handling both old (raw state dict) and new (dict with 'policy'/'optimizer') formats."""
+    checkpoint = torch.load(path, map_location=device, weights_only=True)
+    if isinstance(checkpoint, dict) and 'policy' in checkpoint:
+        policy_state = checkpoint['policy']
+        if optimizer is not None and 'optimizer' in checkpoint:
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            print("  Optimizer state restored.")
+        else:
+            print("  No optimizer state in checkpoint, starting fresh.")
+    else:
+        # Legacy format: file contains only the raw state dict
+        policy_state = checkpoint
+        print("  Legacy weights format (no optimizer state).")
+    policy.load_state_dict(policy_state)
+    policy_old.load_state_dict(policy_state)
 
 
-def load_best(policy, policy_old):
+def load_best(policy, policy_old, optimizer=None):
     files = glob.glob(f"{weights_dir}/score_*.pth")
     if not files:
         print("No weights found to load.")
@@ -143,8 +162,7 @@ def load_best(policy, policy_old):
     for f in files:
         try:
             base = os.path.basename(f)
-            score_str = base.split("_")[2].replace(".pth", "")
-            score = float(score_str)
+            score = float(base.split("_")[1])
             if score > best_score:
                 best_score = score
                 best_file = f
@@ -153,9 +171,7 @@ def load_best(policy, policy_old):
 
     if best_file:
         print(f"Loading best weights: {best_file}")
-        state_dict = torch.load(best_file, map_location=device, weights_only=True)
-        policy.load_state_dict(state_dict)
-        policy_old.load_state_dict(state_dict)
+        _load_checkpoint(best_file, policy, policy_old, optimizer)
         return True
     return False
 
@@ -197,58 +213,16 @@ def save_plots(scores_history, rewards_history):
     }, series_path)
     print(f"History lists saved to {series_path}")
 
-    iterations_s = [d['iteration'] for d in scores_history]
-    avg_scores   = [d['avg_score']  for d in scores_history]
-    best_scores  = [d['best_score'] for d in scores_history]
+    # iterations_s = [d['iteration'] for d in scores_history]
+    # avg_scores   = [d['avg_score']  for d in scores_history]
+    # best_scores  = [d['best_score'] for d in scores_history]
 
-    iterations_r = [d['iteration']   for d in rewards_history]
-    avg_rewards  = [d['avg_reward']  for d in rewards_history]
-    raw_best_rewards = [d['best_reward'] for d in rewards_history]
-    best_rewards = list(np.maximum.accumulate(raw_best_rewards))
+    # iterations_r = [d['iteration']   for d in rewards_history]
+    # avg_rewards  = [d['avg_reward']  for d in rewards_history]
+    # raw_best_rewards = [d['best_reward'] for d in rewards_history]
+    # best_rewards = list(np.maximum.accumulate(raw_best_rewards))
 
-    def _make_figure(iterations, best_values, raw_values, best_label, raw_label, y_label, title_best, title_raw, filepath):
-        fig, (ax_top, ax_bot) = plt.subplots(2, 1, figsize=(10, 10))
 
-        ax_top.plot(iterations, best_values, color='orange', label=best_label)
-        ax_top.set_xlabel('Itération')
-        ax_top.set_ylabel(y_label)
-        ax_top.set_title(title_best)
-        ax_top.legend()
-        ax_top.grid(True)
-
-        ax_bot.plot(iterations, raw_values, color='blue', alpha=0.5, label=raw_label)
-        ma = moving_average(raw_values)
-        ma_iterations = iterations[len(iterations) - len(ma):]
-        ax_bot.plot(ma_iterations, ma, color='black', linewidth=2, label='Moyenne mobile')
-        ax_bot.set_xlabel('Itération')
-        ax_bot.set_ylabel(y_label)
-        ax_bot.set_title(title_raw)
-        ax_bot.legend()
-        ax_bot.grid(True)
-
-        plt.tight_layout()
-        plt.savefig(filepath)
-        plt.close()
-
-    _make_figure(
-        iterations_s, best_scores, avg_scores,
-        best_label='Meilleur Score (m)', raw_label='Score Moyen (m)',
-        y_label='Distance (m)',
-        title_best='Meilleur Score en fonction de l\'itération',
-        title_raw='Score en fonction de l\'itération',
-        filepath=f"python/pytorch/results/plots/scores_{timestamp}.png",
-    )
-
-    _make_figure(
-        iterations_r, best_rewards, avg_rewards,
-        best_label='Meilleure Reward', raw_label='Reward Moyenne',
-        y_label='Reward',
-        title_best='Meilleure Reward en fonction de l\'itération',
-        title_raw='Reward en fonction de l\'itération',
-        filepath=f"python/pytorch/results/plots/rewards_{timestamp}.png",
-    )
-
-    print("Plots saved in python/pytorch/results/plots/")
 
 
 

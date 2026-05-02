@@ -5,7 +5,7 @@ import logging
 from ppo import Agent
 import glob, os
 import torch
-from utils import RolloutBuffer, extract_state, save_plots, load_best, save_weights, weights_dir, device
+from utils import RolloutBuffer, extract_state, save_plots, load_best, save_weights, _load_checkpoint, weights_dir, device
 
 
 # Configure logging to suppress noisy websocket handshake errors
@@ -121,19 +121,15 @@ async def play_game(websocket):
                         weights_file = msg_data.get("weights_file")
                         if weights_file:
                             path = os.path.join(weights_dir, weights_file)
-                            state_dict = torch.load(path, map_location=device, weights_only=True)
-                            agent.policy.load_state_dict(state_dict)
-                            agent.policy_old.load_state_dict(state_dict)
+                            _load_checkpoint(path, agent.policy, agent.policy_old, agent.optimizer)
                             print(f"Warm start with: {weights_file}")
                         else:
-                            load_best(agent.policy, agent.policy_old)
+                            load_best(agent.policy, agent.policy_old, agent.optimizer)
                 if mode == "ai":
                     weights_file = msg_data.get("weights_file")
                     if weights_file:
                         path = os.path.join(weights_dir, weights_file)
-                        state_dict = torch.load(path, map_location=device, weights_only=True)
-                        agent.policy.load_state_dict(state_dict)
-                        agent.policy_old.load_state_dict(state_dict)
+                        _load_checkpoint(path, agent.policy, agent.policy_old)
                         print(f"Loaded weights: {weights_file}")
                     else:
                         load_best(agent.policy, agent.policy_old)
@@ -174,7 +170,7 @@ async def play_game(websocket):
 
             elif msg_type == "save":
                 print(f"\nTraining stopped. Saving weights and plots.")
-                save_weights(agent.policy, session_best_score)
+                    save_weights(agent.policy, agent.optimizer, session_best_score)
                 save_plots(scores_history, rewards_history)
                 ready_for_new_session = True
                 continue
